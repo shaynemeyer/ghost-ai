@@ -8,11 +8,12 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Install and configure the design system (shadcn/ui, lucide-react, Tailwind tokens, cn() helper).
+- Feature 02: Editor chrome — EditorNavbar and ProjectSidebar shell components.
 
 ## Completed
 
 - Feature 01: Design system — shadcn/ui (base-nova style, Tailwind v4), lucide-react, dark-only CSS tokens in globals.css, cn() helper in lib/utils.ts, components: Button, Card, Dialog, Input, Tabs, Textarea, ScrollArea.
+- Feature 02: Editor chrome — EditorNavbar (fixed top bar with sidebar toggle), ProjectSidebar (floating overlay, slides from left, Tabs with empty states, New Project button).
 
 ## In Progress
 
@@ -20,7 +21,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Feature 02: Authentication (Clerk) and route protection.
+- Feature 03: Authentication (Clerk) and route protection.
 
 ## Open Questions
 
