@@ -5,8 +5,23 @@ import { PanelLeftOpen, PanelLeftClose } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { ProjectSidebar } from "./project-sidebar"
+import { type Project } from "@/types/project"
 
-export function EditorNavbar() {
+interface EditorNavbarProps {
+  currentUserId?: string
+  projects?: Project[]
+  onNewProject?: () => void
+  onRenameProject?: (project: Project) => void
+  onDeleteProject?: (project: Project) => void
+}
+
+export function EditorNavbar({
+  currentUserId,
+  projects = [],
+  onNewProject,
+  onRenameProject,
+  onDeleteProject,
+}: EditorNavbarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -33,7 +48,15 @@ export function EditorNavbar() {
           <UserButton />
         </div>
       </header>
-      <ProjectSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <ProjectSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentUserId={currentUserId}
+        projects={projects}
+        onNewProject={onNewProject}
+        onRenameProject={onRenameProject}
+        onDeleteProject={onDeleteProject}
+      />
     </>
   )
 }

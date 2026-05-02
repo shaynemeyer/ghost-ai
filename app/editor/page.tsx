@@ -1,9 +1,9 @@
-import { EditorNavbar } from "@/components/editor/editor-navbar"
+import { EditorShell } from "@/components/editor/editor-shell"
 
 export default function EditorPage() {
   return (
     <div className="h-screen bg-base">
-      <EditorNavbar />
+      <EditorShell />
     </div>
   )
 }

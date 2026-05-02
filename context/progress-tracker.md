@@ -8,13 +8,14 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 04: next feature TBD
+- Feature 04: Project dialogs and editor home (complete)
 
 ## Completed
 
 - Feature 01: Design system — shadcn/ui (base-nova style, Tailwind v4), lucide-react, dark-only CSS tokens in globals.css, cn() helper in lib/utils.ts, components: Button, Card, Dialog, Input, Tabs, Textarea, ScrollArea.
 - Feature 02: Editor chrome — EditorNavbar (fixed top bar with sidebar toggle), ProjectSidebar (floating overlay, slides from left, Tabs with empty states, New Project button).
 - Feature 03: Authentication (Clerk) — ClerkProvider with dark theme in root layout, proxy.ts at project root (protected-first, Next.js 16 convention), sign-in and sign-up pages with two-panel layout (large) / form-only (small), / redirects authenticated→/editor and renders SignIn with routing="hash" for unauthenticated users, UserButton in EditorNavbar right section.
+- Feature 04: Project dialogs and editor home — EditorShell client wrapper, editor home screen with New Project button, useProjectDialogs hook (dialog/form/loading state), Create/Rename/Delete dialogs with live slug preview, sidebar project items with rename/delete actions (owner-only), mobile backdrop scrim. Mock data only in types/project.ts.
 
 ## In Progress
 
@@ -22,7 +23,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Feature 04: TBD
+- Feature 05: TBD
 
 ## Open Questions
 
