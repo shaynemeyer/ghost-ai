@@ -9,8 +9,8 @@ import { type Project } from "@/types/project"
 interface ProjectSidebarProps {
   isOpen: boolean
   onClose: () => void
-  currentUserId?: string
-  projects?: Project[]
+  ownedProjects: Project[]
+  sharedProjects: Project[]
   onNewProject?: () => void
   onRenameProject?: (project: Project) => void
   onDeleteProject?: (project: Project) => void
@@ -19,15 +19,12 @@ interface ProjectSidebarProps {
 export function ProjectSidebar({
   isOpen,
   onClose,
-  currentUserId,
-  projects = [],
+  ownedProjects,
+  sharedProjects,
   onNewProject,
   onRenameProject,
   onDeleteProject,
 }: ProjectSidebarProps) {
-  const ownedProjects = projects.filter((p) => p.ownerId === currentUserId)
-  const sharedProjects = projects.filter((p) => p.ownerId !== currentUserId)
-
   return (
     <>
       <div

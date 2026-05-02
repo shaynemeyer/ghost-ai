@@ -8,16 +8,16 @@ import { ProjectSidebar } from "./project-sidebar"
 import { type Project } from "@/types/project"
 
 interface EditorNavbarProps {
-  currentUserId?: string
-  projects?: Project[]
+  ownedProjects: Project[]
+  sharedProjects: Project[]
   onNewProject?: () => void
   onRenameProject?: (project: Project) => void
   onDeleteProject?: (project: Project) => void
 }
 
 export function EditorNavbar({
-  currentUserId,
-  projects = [],
+  ownedProjects,
+  sharedProjects,
   onNewProject,
   onRenameProject,
   onDeleteProject,
@@ -51,8 +51,8 @@ export function EditorNavbar({
       <ProjectSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        currentUserId={currentUserId}
-        projects={projects}
+        ownedProjects={ownedProjects}
+        sharedProjects={sharedProjects}
         onNewProject={onNewProject}
         onRenameProject={onRenameProject}
         onDeleteProject={onDeleteProject}

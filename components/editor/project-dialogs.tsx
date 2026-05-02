@@ -1,6 +1,5 @@
 "use client"
 
-import { toSlug } from "@/lib/slug"
 import {
   Dialog,
   DialogContent,
@@ -11,57 +10,59 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { type ProjectDialogsHandle } from "@/hooks/use-project-dialogs"
+import { type ProjectActionsHandle } from "@/hooks/use-project-actions"
 
 interface ProjectDialogsProps {
-  dialogs: ProjectDialogsHandle
+  actions: ProjectActionsHandle
 }
 
-export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
+export function ProjectDialogs({ actions }: ProjectDialogsProps) {
   return (
     <>
-      <CreateProjectDialog dialogs={dialogs} />
-      <RenameProjectDialog dialogs={dialogs} />
-      <DeleteProjectDialog dialogs={dialogs} />
+      <CreateProjectDialog actions={actions} />
+      <RenameProjectDialog actions={actions} />
+      <DeleteProjectDialog actions={actions} />
     </>
   )
 }
 
-function CreateProjectDialog({ dialogs }: { dialogs: ProjectDialogsHandle }) {
-  const slug = toSlug(dialogs.name)
-
+function CreateProjectDialog({ actions }: { actions: ProjectActionsHandle }) {
   function handleOpenChange(open: boolean) {
-    if (!open) dialogs.close()
+    if (!open && !actions.loading) actions.close()
   }
 
   return (
-    <Dialog open={dialogs.dialog === "create"} onOpenChange={handleOpenChange}>
+    <Dialog open={actions.dialog === "create"} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>New Project</DialogTitle>
+          <DialogTitle className="text-copy-primary">New Project</DialogTitle>
           <DialogDescription>Name your architecture workspace.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Input
+            className="text-copy-primary"
             placeholder="Project name"
-            value={dialogs.name}
-            onChange={(e) => dialogs.setName(e.target.value)}
+            value={actions.name}
+            onChange={(e) => actions.setName(e.target.value)}
             autoFocus
           />
-          <p className="min-h-4 text-xs text-copy-faint">
-            {slug && (
+          <p className="min-h-4 text-xs text-copy-muted">
+            {actions.roomId && (
               <>
-                <span className="text-copy-muted">slug: </span>
-                {slug}
+                <span className="text-copy-muted">room ID: </span>
+                {actions.roomId}
               </>
             )}
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={dialogs.close}>
+          <Button variant="outline" onClick={actions.close} disabled={actions.loading}>
             Cancel
           </Button>
-          <Button disabled={!dialogs.name.trim()} onClick={dialogs.close}>
+          <Button
+            disabled={!actions.name.trim() || actions.loading}
+            onClick={actions.submitCreate}
+          >
             Create
           </Button>
         </DialogFooter>
@@ -70,40 +71,44 @@ function CreateProjectDialog({ dialogs }: { dialogs: ProjectDialogsHandle }) {
   )
 }
 
-function RenameProjectDialog({ dialogs }: { dialogs: ProjectDialogsHandle }) {
+function RenameProjectDialog({ actions }: { actions: ProjectActionsHandle }) {
   function handleOpenChange(open: boolean) {
-    if (!open) dialogs.close()
+    if (!open && !actions.loading) actions.close()
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && dialogs.name.trim()) {
-      dialogs.close()
+    if (e.key === "Enter" && actions.name.trim()) {
+      actions.submitRename()
     }
   }
 
   return (
-    <Dialog open={dialogs.dialog === "rename"} onOpenChange={handleOpenChange}>
+    <Dialog open={actions.dialog === "rename"} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Rename Project</DialogTitle>
-          {dialogs.selectedProject && (
+          <DialogTitle className="text-copy-primary">Rename Project</DialogTitle>
+          {actions.selectedProject && (
             <DialogDescription>
-              Renaming &ldquo;{dialogs.selectedProject.name}&rdquo;
+              Renaming &ldquo;{actions.selectedProject.name}&rdquo;
             </DialogDescription>
           )}
         </DialogHeader>
         <Input
+          className="text-copy-primary"
           placeholder="Project name"
-          value={dialogs.name}
-          onChange={(e) => dialogs.setName(e.target.value)}
+          value={actions.name}
+          onChange={(e) => actions.setName(e.target.value)}
           onKeyDown={handleKeyDown}
           autoFocus
         />
         <DialogFooter>
-          <Button variant="outline" onClick={dialogs.close}>
+          <Button variant="outline" onClick={actions.close} disabled={actions.loading}>
             Cancel
           </Button>
-          <Button disabled={!dialogs.name.trim()} onClick={dialogs.close}>
+          <Button
+            disabled={!actions.name.trim() || actions.loading}
+            onClick={actions.submitRename}
+          >
             Rename
           </Button>
         </DialogFooter>
@@ -112,28 +117,32 @@ function RenameProjectDialog({ dialogs }: { dialogs: ProjectDialogsHandle }) {
   )
 }
 
-function DeleteProjectDialog({ dialogs }: { dialogs: ProjectDialogsHandle }) {
+function DeleteProjectDialog({ actions }: { actions: ProjectActionsHandle }) {
   function handleOpenChange(open: boolean) {
-    if (!open) dialogs.close()
+    if (!open && !actions.loading) actions.close()
   }
 
   return (
-    <Dialog open={dialogs.dialog === "delete"} onOpenChange={handleOpenChange}>
+    <Dialog open={actions.dialog === "delete"} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Delete Project</DialogTitle>
-          {dialogs.selectedProject && (
+          <DialogTitle className="text-copy-primary">Delete Project</DialogTitle>
+          {actions.selectedProject && (
             <DialogDescription>
-              Are you sure you want to delete &ldquo;{dialogs.selectedProject.name}&rdquo;? This
+              Are you sure you want to delete &ldquo;{actions.selectedProject.name}&rdquo;? This
               action cannot be undone.
             </DialogDescription>
           )}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={dialogs.close}>
+          <Button variant="outline" onClick={actions.close} disabled={actions.loading}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={dialogs.close}>
+          <Button
+            variant="destructive"
+            disabled={actions.loading}
+            onClick={actions.submitDelete}
+          >
             Delete
           </Button>
         </DialogFooter>

@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 06: Project APIs (complete)
+- Feature 07: Wire editor home (complete)
 
 ## Completed
 
@@ -19,13 +19,15 @@ Update this file whenever the current phase, active feature, or implementation s
 - Feature 05: Prisma data models — prisma/models/project.prisma with Project (ownerId, name, description, status enum DRAFT/ARCHIVED, canvasJsonPath, timestamps, indexes on ownerId and createdAt) and ProjectCollaborator (projectId cascade, email, createdAt, unique project/email, indexes on email and projectId/createdAt). Migration applied (20260502162854_init). lib/prisma.ts singleton with PrismaPg adapter, branches on DATABASE_URL prefix (prisma+postgres:// vs direct), cached on globalThis in development. Client generated to app/generated/prisma/.
 - Feature 06: Project APIs — app/api/projects/route.ts (GET list, POST create) and app/api/projects/[projectId]/route.ts (PATCH rename, DELETE delete). Auth via Clerk auth(). 401 for unauthenticated, 403 for non-owner mutations. Missing name defaults to "Untitled Project" on create. cuid format guard on projectId. P2025 race condition handled in PATCH. lib/prisma.ts simplified: withAccelerate() always applied, conditional branch removed, ExtendedClient type derived via ReturnType.
 
+- Feature 07: Wire editor home — app/editor/page.tsx fetches owned and shared projects server-side via lib/projects.ts (getOwnedProjects by userId, getSharedProjects by email via collaborators). hooks/use-project-actions.ts replaces useProjectDialogs — manages dialog state plus create/rename/delete mutations against the real API. Create navigates to /editor/[project.id], rename calls refresh, delete redirects to /editor if on the active workspace or refreshes otherwise. types/project.ts re-exports Prisma Project type (slug field removed). ProjectSidebar, EditorNavbar, EditorShell, ProjectDialogs all updated to use real data and wired submit handlers. Dialog shows room ID preview.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 07: TBD
+- Feature 08: TBD
 
 ## Open Questions
 
