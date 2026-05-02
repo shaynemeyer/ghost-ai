@@ -8,12 +8,13 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 02: Editor chrome — EditorNavbar and ProjectSidebar shell components.
+- Feature 04: next feature TBD
 
 ## Completed
 
 - Feature 01: Design system — shadcn/ui (base-nova style, Tailwind v4), lucide-react, dark-only CSS tokens in globals.css, cn() helper in lib/utils.ts, components: Button, Card, Dialog, Input, Tabs, Textarea, ScrollArea.
 - Feature 02: Editor chrome — EditorNavbar (fixed top bar with sidebar toggle), ProjectSidebar (floating overlay, slides from left, Tabs with empty states, New Project button).
+- Feature 03: Authentication (Clerk) — ClerkProvider with dark theme in root layout, proxy.ts at project root (protected-first, Next.js 16 convention), sign-in and sign-up pages with two-panel layout (large) / form-only (small), / redirects authenticated→/editor and renders SignIn with routing="hash" for unauthenticated users, UserButton in EditorNavbar right section.
 
 ## In Progress
 
@@ -21,7 +22,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Feature 03: Authentication (Clerk) and route protection.
+- Feature 04: TBD
 
 ## Open Questions
 
@@ -36,3 +37,6 @@ Update this file whenever the current phase, active feature, or implementation s
 - shadcn uses "base-nova" style with @base-ui/react (not Radix) — this is the new default for shadcn 4.x. Do not modify components/ui/* files.
 - Feature spec 01-design-system.md has a typo: `liv/utils.ts` should be `lib/utils.ts` (correct path, confirmed by shadcn components.json alias).
 - Tailwind v4: all token config is CSS-first in globals.css via @theme inline — no tailwind.config.js exists or is needed.
+- Next.js 16 renamed middleware.ts → proxy.ts. The Clerk clerkMiddleware export goes in proxy.ts at the project root.
+- Clerk appearance variables use colorForeground (not colorText), colorInput (not colorInputBackground), colorInputForeground (not colorInputText). @clerk/ui/themes provides the dark theme for current SDK (v7+).
+- CORS error on sign-out when SignIn is rendered at "/": Clerk's useEnforceCatchAllRoute hook (dev-only) builds a probe URL as `${origin}${pathname}/${component}_clerk_catchall_check_...`. At pathname "/" this produces a double-slash ("//...") which the browser treats as a protocol-relative URL. Clerk middleware redirects it to the hosted accounts domain, which CORS-blocks the response. Fix: pass routing="hash" to the SignIn component when it is rendered outside its canonical catch-all route. The hook returns early for any routing value other than "path". Note: "virtual" exists in @clerk/shared RoutingStrategy but is not in the SignIn component prop union — "hash" is the correct prop value to use.

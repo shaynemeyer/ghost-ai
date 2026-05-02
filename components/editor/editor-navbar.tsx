@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { PanelLeftOpen, PanelLeftClose } from "lucide-react"
+import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { ProjectSidebar } from "./project-sidebar"
 
@@ -28,7 +29,9 @@ export function EditorNavbar() {
           </button>
         </div>
         <div className="flex-1" />
-        <div className="px-3" />
+        <div className="px-3">
+          <UserButton />
+        </div>
       </header>
       <ProjectSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </>

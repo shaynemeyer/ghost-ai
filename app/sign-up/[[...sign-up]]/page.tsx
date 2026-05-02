@@ -1,6 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
-import { SignIn } from "@clerk/nextjs"
+import { SignUp } from "@clerk/nextjs"
 import { BrainCircuit, Share2, FileCode2 } from "lucide-react"
 
 const features = [
@@ -24,15 +22,10 @@ const features = [
   },
 ]
 
-export default async function Home() {
-  const { userId } = await auth()
-  if (userId) redirect("/editor")
-
+export default function SignUpPage() {
   return (
     <div className="flex min-h-screen font-sans">
-      {/* Left panel — large screens only */}
       <div className="hidden lg:flex w-1/2 flex-col bg-surface border-r border-surface-border p-12">
-        {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-brand shrink-0" />
           <span className="font-semibold text-copy-primary tracking-tight">
@@ -40,7 +33,6 @@ export default async function Home() {
           </span>
         </div>
 
-        {/* Hero copy */}
         <div className="flex-1 flex flex-col justify-center">
           <h1 className="text-5xl font-bold text-copy-primary leading-tight tracking-tight mb-5">
             Design systems at the speed of thought.
@@ -50,7 +42,6 @@ export default async function Home() {
             shared canvas your whole team can refine in real time.
           </p>
 
-          {/* Feature list */}
           <div className="space-y-6">
             {features.map(({ icon: Icon, title, description }) => (
               <div key={title} className="flex items-start gap-4">
@@ -66,23 +57,13 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Footer */}
         <p className="text-copy-faint text-sm">
           © 2026 Ghost AI. All rights reserved.
         </p>
       </div>
 
-      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center bg-base min-h-screen p-8">
-        {/* routing="virtual" prevents Clerk's useEnforceCatchAllRoute hook from
-            firing a probe fetch. Without it, the hook builds the check URL as
-            `${origin}${pathname}/${component}_clerk_catchall_check_...`, which
-            at pathname "/" produces a double-slash ("//...") that the browser
-            treats as a protocol-relative URL. Clerk middleware then redirects
-            that request to the hosted accounts domain, causing a CORS error.
-            "virtual" tells Clerk the component is embedded outside its canonical
-            route, skipping the check entirely. */}
-        <SignIn routing="hash" />
+        <SignUp />
       </div>
     </div>
   )
