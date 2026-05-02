@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 05: Prisma data models (complete)
+- Feature 06: Project APIs (complete)
 
 ## Completed
 
@@ -17,6 +17,7 @@ Update this file whenever the current phase, active feature, or implementation s
 - Feature 03: Authentication (Clerk) — ClerkProvider with dark theme in root layout, proxy.ts at project root (protected-first, Next.js 16 convention), sign-in and sign-up pages with two-panel layout (large) / form-only (small), / redirects authenticated→/editor and renders SignIn with routing="hash" for unauthenticated users, UserButton in EditorNavbar right section.
 - Feature 04: Project dialogs and editor home — EditorShell client wrapper, editor home screen with New Project button, useProjectDialogs hook (dialog/form/loading state), Create/Rename/Delete dialogs with live slug preview, sidebar project items with rename/delete actions (owner-only), mobile backdrop scrim. Mock data only in types/project.ts.
 - Feature 05: Prisma data models — prisma/models/project.prisma with Project (ownerId, name, description, status enum DRAFT/ARCHIVED, canvasJsonPath, timestamps, indexes on ownerId and createdAt) and ProjectCollaborator (projectId cascade, email, createdAt, unique project/email, indexes on email and projectId/createdAt). Migration applied (20260502162854_init). lib/prisma.ts singleton with PrismaPg adapter, branches on DATABASE_URL prefix (prisma+postgres:// vs direct), cached on globalThis in development. Client generated to app/generated/prisma/.
+- Feature 06: Project APIs — app/api/projects/route.ts (GET list, POST create) and app/api/projects/[projectId]/route.ts (PATCH rename, DELETE delete). Auth via Clerk auth(). 401 for unauthenticated, 403 for non-owner mutations. Missing name defaults to "Untitled Project" on create. cuid format guard on projectId. P2025 race condition handled in PATCH. lib/prisma.ts simplified: withAccelerate() always applied, conditional branch removed, ExtendedClient type derived via ReturnType.
 
 ## In Progress
 
@@ -24,7 +25,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Feature 06: TBD
+- Feature 07: TBD
 
 ## Open Questions
 
@@ -38,7 +39,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Prisma v7 multi-file schema: generator output is `app/generated/prisma/`, import PrismaClient from `@/app/generated/prisma/client` (no index.ts — must use /client suffix).
 - PrismaPg (from @prisma/adapter-pg) accepts a connection string directly; used as the factory passed to `new PrismaClient({ adapter })`.
-- For prisma+postgres:// URLs, PrismaPg accepts the string but pg library won't connect at runtime without @prisma/extension-accelerate — install that package and extend the client in the Accelerate branch when Prisma Postgres is used.
+- withAccelerate() is applied unconditionally in lib/prisma.ts — the extension is a no-op for non-Accelerate URLs and activates automatically when DATABASE_URL uses the prisma+postgres:// scheme.
 
 - shadcn uses "base-nova" style with @base-ui/react (not Radix) — this is the new default for shadcn 4.x. Do not modify components/ui/* files.
 - Feature spec 01-design-system.md has a typo: `liv/utils.ts` should be `lib/utils.ts` (correct path, confirmed by shadcn components.json alias).
