@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Pencil, Trash2, X, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ interface ProjectSidebarProps {
   onClose: () => void
   ownedProjects: Project[]
   sharedProjects: Project[]
+  activeProjectId?: string
   onNewProject?: () => void
   onRenameProject?: (project: Project) => void
   onDeleteProject?: (project: Project) => void
@@ -21,6 +23,7 @@ export function ProjectSidebar({
   onClose,
   ownedProjects,
   sharedProjects,
+  activeProjectId,
   onNewProject,
   onRenameProject,
   onDeleteProject,
@@ -80,6 +83,7 @@ export function ProjectSidebar({
                     <ProjectItem
                       key={project.id}
                       project={project}
+                      isActive={project.id === activeProjectId}
                       onRename={() => onRenameProject?.(project)}
                       onDelete={() => onDeleteProject?.(project)}
                     />
@@ -124,25 +128,28 @@ export function ProjectSidebar({
 
 interface ProjectItemProps {
   project: Project
+  isActive?: boolean
   onRename: () => void
   onDelete: () => void
 }
 
-function ProjectItem({ project, onRename, onDelete }: ProjectItemProps) {
+function ProjectItem({ project, isActive, onRename, onDelete }: ProjectItemProps) {
   return (
-    <li className="group flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 hover:bg-elevated">
-      <span className="flex-1 truncate text-sm text-copy-secondary">{project.name}</span>
+    <li className={cn("group flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-elevated", isActive && "bg-elevated")}>
+      <Link href={`/editor/${project.id}`} className="flex-1 truncate text-sm text-copy-secondary hover:text-copy-primary">
+        {project.name}
+      </Link>
       <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <button
           onClick={(e) => { e.stopPropagation(); onRename() }}
-          className="rounded-lg p-1 text-copy-muted transition-colors hover:bg-subtle hover:text-copy-primary"
+          className="rounded-xl p-1 text-copy-muted transition-colors hover:bg-subtle hover:text-copy-primary"
           aria-label={`Rename ${project.name}`}
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete() }}
-          className="rounded-lg p-1 text-copy-muted transition-colors hover:bg-subtle hover:text-error"
+          className="rounded-xl p-1 text-copy-muted transition-colors hover:bg-subtle hover:text-error"
           aria-label={`Delete ${project.name}`}
         >
           <Trash2 className="h-3.5 w-3.5" />

@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 07: Wire editor home (complete)
+- Feature 09: Share dialog (complete)
 
 ## Completed
 
@@ -21,13 +21,17 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 07: Wire editor home — app/editor/page.tsx fetches owned and shared projects server-side via lib/projects.ts (getOwnedProjects by userId, getSharedProjects by email via collaborators). hooks/use-project-actions.ts replaces useProjectDialogs — manages dialog state plus create/rename/delete mutations against the real API. Create navigates to /editor/[project.id], rename calls refresh, delete redirects to /editor if on the active workspace or refreshes otherwise. types/project.ts re-exports Prisma Project type (slug field removed). ProjectSidebar, EditorNavbar, EditorShell, ProjectDialogs all updated to use real data and wired submit handlers. Dialog shows room ID preview.
 
+- Feature 08: Editor workspace shell — `app/editor/[roomId]/page.tsx` server component with Clerk auth (redirect to /sign-in) and project access checks (AccessDenied for missing/unauthorized). `lib/project-access.ts` with `getCurrentIdentity()` and `getProjectWithAccess()` helpers. `components/editor/access-denied.tsx` (centered lock icon + link back). `components/editor/workspace-shell.tsx` client component: navbar with project name, share button, AI sidebar toggle, UserButton; ProjectSidebar with activeProjectId highlighting; canvas placeholder; collapsible right AI sidebar placeholder.
+
+- Feature 09: Share dialog — `GET/POST /api/projects/[projectId]/collaborators` and `DELETE /api/projects/[projectId]/collaborators/[collaboratorId]`. Clerk backend API enriches collaborator emails with display name and avatar (`clerkClient().users.getUserList`). `components/editor/share-dialog.tsx`: owner view has invite-by-email input, collaborator list with remove buttons, copy-link with "Copied!" feedback; collaborator view is read-only. `WorkspaceShell` gains `isOwner` prop (computed in page from `project.ownerId === userId`) and wires the Share button to the dialog.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 08: TBD
+- Feature 10: TBD
 
 ## Open Questions
 

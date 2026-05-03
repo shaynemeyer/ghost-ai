@@ -2,13 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isValidProjectId } from "@/lib/validation";
 
 interface Params {
   params: Promise<{ projectId: string }>;
-}
-
-function isValidProjectId(id: string): boolean {
-  return /^c[a-z0-9]{24}$/.test(id);
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
