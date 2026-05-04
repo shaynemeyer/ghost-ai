@@ -1,6 +1,9 @@
 "use client";
 
-import { type NodeShape, SHAPE_DEFAULTS } from "@/types/canvas";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { type NodeShape, SHAPE_DEFAULTS, NODE_COLORS } from "@/types/canvas";
+import { ShapeBody } from "./canvas-node";
 
 const SHAPES: NodeShape[] = [
   "rectangle",
@@ -54,7 +57,40 @@ function ShapeIcon({ shape }: { shape: NodeShape }) {
   }
 }
 
+type DragState = { shape: NodeShape; x: number; y: number };
+
+function ShapeDragPreview({ shape, x, y }: DragState) {
+  const { width, height } = SHAPE_DEFAULTS[shape];
+  return (
+    <div
+      className="pointer-events-none fixed z-50 opacity-60"
+      style={{ left: x - width / 2, top: y - height / 2, width, height }}
+    >
+      <ShapeBody shape={shape} fill={NODE_COLORS[0].fill} stroke="var(--accent-primary)" />
+    </div>
+  );
+}
+
 export function ShapePanel() {
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => setIsMounted(true), []);
+
+  const isDragging = dragState !== null;
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) =>
+      setDragState((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null));
+    const onDragEnd = () => setDragState(null);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("dragend", onDragEnd);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("dragend", onDragEnd);
+    };
+  }, [isDragging]);
+
   function onDragStart(e: React.DragEvent, shape: NodeShape) {
     const { width, height } = SHAPE_DEFAULTS[shape];
     e.dataTransfer.setData(
@@ -62,21 +98,33 @@ export function ShapePanel() {
       JSON.stringify({ shape, width, height })
     );
     e.dataTransfer.effectAllowed = "copy";
+
+    const ghost = document.createElement("div");
+    ghost.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0";
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, 0, 0);
+    setTimeout(() => ghost.remove(), 0);
+
+    setDragState({ shape, x: e.clientX, y: e.clientY });
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-surface-border bg-surface px-3 py-2 shadow-lg">
-      {SHAPES.map((shape) => (
-        <button
-          key={shape}
-          draggable
-          onDragStart={(e) => onDragStart(e, shape)}
-          className="cursor-grab rounded-xl p-1.5 text-copy-muted transition-colors hover:bg-elevated hover:text-copy-primary active:cursor-grabbing"
-          title={shape}
-        >
-          <ShapeIcon shape={shape} />
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="flex items-center gap-1 rounded-full border border-surface-border bg-surface px-3 py-2 shadow-lg">
+        {SHAPES.map((shape) => (
+          <button
+            key={shape}
+            draggable
+            onDragStart={(e) => onDragStart(e, shape)}
+            onDragEnd={() => setDragState(null)}
+            className="cursor-grab rounded-xl p-1.5 text-copy-muted transition-colors hover:bg-elevated hover:text-copy-primary active:cursor-grabbing"
+            title={shape}
+          >
+            <ShapeIcon shape={shape} />
+          </button>
+        ))}
+      </div>
+      {isMounted && dragState && createPortal(<ShapeDragPreview {...dragState} />, document.body)}
+    </>
   );
 }

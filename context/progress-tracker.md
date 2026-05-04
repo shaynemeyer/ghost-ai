@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 09: Share dialog (complete)
+- Feature 13: Node shape rendering + drag preview (complete)
 
 ## Completed
 
@@ -31,13 +31,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 12: Shape panel — `types/canvas.ts` gains `SHAPE_DEFAULTS` (per-shape default width/height). `components/editor/shape-panel.tsx`: floating pill toolbar (`Panel position="bottom-center"`) with 6 draggable buttons (rectangle/diamond/circle/pill/cylinder/hexagon), each setting `application/canvas-shape` JSON payload `{shape, width, height}` on drag start. `components/editor/canvas-node.tsx`: `CanvasNodeRenderer` — dynamic fill/text from `data.color`, selected border via `var(--accent-primary)`, 4 source handles on all sides, centered label. `canvas-wrapper.tsx` gains `ReactFlowProvider` (wraps `Canvas`) so `useReactFlow()` is accessible in `canvas.tsx`. `canvas.tsx` adds `nodeTypes`, `onDragOver`, `onDrop` (parses payload, calls `screenToFlowPosition`, creates node centered on cursor via `onNodesChange([{ type: "add", item }])`), and `ShapePanel` rendered in `Panel`. Node IDs generated as `{shape}-{timestamp}-{counter}`.
 
+- Feature 13: Node shape rendering + drag preview — `components/editor/canvas-node.tsx`: extracted exported `ShapeBody` component; CSS shapes (rectangle `rounded-xl`, pill/circle `rounded-full`) use styled divs; SVG shapes (diamond, hexagon, cylinder) use `<svg width="100%" height="100%" preserveAspectRatio="none">` with `vectorEffect="non-scaling-stroke"` so stroke width stays consistent at all zoom levels; `CanvasNodeRenderer` composes `ShapeBody` with an absolute-positioned label overlay and 4 handles. `components/editor/shape-panel.tsx`: on drag start, hides browser default ghost via `dataTransfer.setDragImage` on a 1×1 off-screen element, sets `dragState`; `mousemove` listener tracks cursor while dragging; `ShapeDragPreview` renders via `createPortal` to `document.body` at fixed position centered on cursor using `ShapeBody` with `NODE_COLORS[0]` fill and `--accent-primary` stroke; preview cleared on `dragEnd`.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 13: TBD
+- Feature 14: TBD
 
 ## Open Questions
 
