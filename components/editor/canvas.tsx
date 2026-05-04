@@ -60,7 +60,8 @@ export function Canvas() {
         type: "canvasNode",
         position: { x: position.x - width / 2, y: position.y - height / 2 },
         data: { label: "", color: NODE_COLORS[0], shape },
-        style: { width, height },
+        width,
+        height,
       };
 
       onNodesChange([{ type: "add", item: newNode }]);

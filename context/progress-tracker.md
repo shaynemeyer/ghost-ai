@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 13: Node shape rendering + drag preview (complete)
+- Feature 14: Node resizing + inline label editing (complete)
 
 ## Completed
 
@@ -33,13 +33,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 13: Node shape rendering + drag preview — `components/editor/canvas-node.tsx`: extracted exported `ShapeBody` component; CSS shapes (rectangle `rounded-xl`, pill/circle `rounded-full`) use styled divs; SVG shapes (diamond, hexagon, cylinder) use `<svg width="100%" height="100%" preserveAspectRatio="none">` with `vectorEffect="non-scaling-stroke"` so stroke width stays consistent at all zoom levels; `CanvasNodeRenderer` composes `ShapeBody` with an absolute-positioned label overlay and 4 handles. `components/editor/shape-panel.tsx`: on drag start, hides browser default ghost via `dataTransfer.setDragImage` on a 1×1 off-screen element, sets `dragState`; `mousemove` listener tracks cursor while dragging; `ShapeDragPreview` renders via `createPortal` to `document.body` at fixed position centered on cursor using `ShapeBody` with `NODE_COLORS[0]` fill and `--accent-primary` stroke; preview cleared on `dragEnd`.
 
+- Feature 14: Node resizing + inline label editing — `components/editor/canvas-node.tsx` only. `NodeResizer` from `@xyflow/react` renders as the first child of the node root div, visible only when `selected`, with 60×40 minimums and subtle accent-colored handles. Inline label editing: `isEditing`/`editValue` state + `textareaRef`; double-click the label span starts editing (auto-focuses and selects text via `useEffect`); blur commits via `updateNodeData(id, { label })`; Escape discards without committing; `nodrag nopan` classes prevent canvas drag/pan during text input. Resize syncs through the existing `onNodesChange` from `useLiveblocksFlow`; label sync via `useReactFlow().updateNodeData` which `@liveblocks/react-flow` v3 intercepts and pushes to Liveblocks Storage.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 14: TBD
+- Feature 15: TBD
 
 ## Open Questions
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow, type NodeProps } from "@xyflow/react";
 import type { CanvasNode, NodeShape } from "@/types/canvas";
 
 type ShapeBodyProps = {
@@ -70,17 +71,82 @@ export function ShapeBody({ shape, fill, stroke }: ShapeBodyProps) {
   }
 }
 
-export function CanvasNodeRenderer({ data, selected }: NodeProps<CanvasNode>) {
+export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>) {
   const stroke = selected ? "var(--accent-primary)" : "var(--border-subtle)";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(data.label);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const escapedRef = useRef(false);
+  const { updateNodeData } = useReactFlow();
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, [isEditing]);
+
+  function startEditing() {
+    setEditValue(data.label);
+    setIsEditing(true);
+  }
+
+  function commitEdit() {
+    if (escapedRef.current) {
+      escapedRef.current = false;
+      setIsEditing(false);
+      return;
+    }
+    updateNodeData(id, { label: editValue });
+    setIsEditing(false);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      escapedRef.current = true;
+      setIsEditing(false);
+    }
+  }
 
   return (
     <div className="relative h-full w-full">
+      <NodeResizer
+        isVisible={selected}
+        minWidth={60}
+        minHeight={40}
+        lineStyle={{ borderColor: "var(--accent-primary)", opacity: 0.4 }}
+        handleStyle={{
+          background: "var(--bg-surface)",
+          borderColor: "var(--accent-primary)",
+          opacity: 0.7,
+          width: 6,
+          height: 6,
+        }}
+      />
       <ShapeBody shape={data.shape} fill={data.color.fill} stroke={stroke} />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <span className="truncate px-3 text-xs" style={{ color: data.color.text }}>
-          {data.label}
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          className="nodrag nopan absolute left-0 right-0 resize-none bg-transparent px-2 text-center text-xs outline-none"
+          style={{ top: "50%", transform: "translateY(-50%)", color: data.color.text }}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={onKeyDown}
+        />
+      ) : (
+        <span
+          className="absolute inset-0 flex items-center justify-center px-2 text-xs"
+          style={{ color: data.color.text }}
+          onDoubleClick={(e) => { e.stopPropagation(); startEditing(); }}
+        >
+          {data.label
+            ? <span className="min-w-0 truncate">{data.label}</span>
+            : <span className="min-w-0 truncate opacity-40">label</span>
+          }
         </span>
-      </div>
+      )}
       <Handle type="target" position={Position.Top} className="bg-white! border-white/40!" />
       <Handle type="source" position={Position.Right} className="bg-white! border-white/40!" />
       <Handle type="source" position={Position.Bottom} className="bg-white! border-white/40!" />
