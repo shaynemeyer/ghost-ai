@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { ProjectSidebar } from "./project-sidebar"
 import { ProjectDialogs } from "./project-dialogs"
 import { ShareDialog } from "./share-dialog"
+import { CanvasWrapper } from "./canvas-wrapper"
 import { Button } from "@/components/ui/button"
 import { useProjectActions } from "@/hooks/use-project-actions"
 import { type Project } from "@/types/project"
@@ -80,8 +81,8 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
       />
 
       <div className="flex h-screen pt-12 overflow-hidden">
-        <main className="flex flex-1 items-center justify-center bg-base">
-          <span className="text-sm text-copy-faint">Canvas coming soon</span>
+        <main className="relative flex-1 overflow-hidden bg-base">
+          <CanvasWrapper roomId={project.id} />
         </main>
 
         {aiSidebarOpen && (

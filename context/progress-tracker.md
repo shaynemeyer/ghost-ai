@@ -25,13 +25,19 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 09: Share dialog — `GET/POST /api/projects/[projectId]/collaborators` and `DELETE /api/projects/[projectId]/collaborators/[collaboratorId]`. Clerk backend API enriches collaborator emails with display name and avatar (`clerkClient().users.getUserList`). `components/editor/share-dialog.tsx`: owner view has invite-by-email input, collaborator list with remove buttons, copy-link with "Copied!" feedback; collaborator view is read-only. `WorkspaceShell` gains `isOwner` prop (computed in page from `project.ownerId === userId`) and wires the Share button to the dialog.
 
+- Feature 10: Liveblocks setup — `liveblocks.config.ts` updated with `Presence` (`cursor: {x,y}|null`, `isThinking: boolean`) and `UserMeta` (`id`, `info.name`, `info.avatar`, `info.cursorColor`). `lib/liveblocks.ts` exports `getLiveblocks()` (lazily cached node client) and `getUserCursorColor(userId)` (deterministic hash into 10-color palette). `POST /api/liveblocks-auth`: requires Clerk auth, verifies project membership via `getProjectWithAccess`, calls `getOrCreateRoom`, issues access token with name/avatar/cursorColor. Returns 403 for unauthorized access. `@liveblocks/node@3.18.5` added (exact pin). Lazy init required because the Liveblocks constructor validates the secret key at instantiation — eager init throws during build when env vars are absent.
+
+- Feature 11: Base canvas — `types/canvas.ts` defines `NODE_COLORS` (8 dark fill/text pairs), `NODE_SHAPES` (6 values), `NodeData` (label/color/shape), `CanvasNode` and `CanvasEdge` typed with `"canvasNode"` and `"canvasEdge"` discriminators. `components/editor/canvas-wrapper.tsx`: `LiveblocksProvider` (authEndpoint `/api/liveblocks-auth`) → `RoomProvider` (id=roomId, initialPresence cursor:null/isThinking:false) → `CanvasErrorBoundary` (class component) → `ClientSideSuspense`. `components/editor/canvas.tsx`: `useLiveblocksFlow` (suspense:true, empty initial nodes/edges) → `ReactFlow` with `ConnectionMode.Loose`, `fitView`, `Background` (dots), `MiniMap`, `Cursors`. Canvas placeholder in `WorkspaceShell` replaced with `<CanvasWrapper roomId={project.id} />`.
+
+- Feature 12: Shape panel — `types/canvas.ts` gains `SHAPE_DEFAULTS` (per-shape default width/height). `components/editor/shape-panel.tsx`: floating pill toolbar (`Panel position="bottom-center"`) with 6 draggable buttons (rectangle/diamond/circle/pill/cylinder/hexagon), each setting `application/canvas-shape` JSON payload `{shape, width, height}` on drag start. `components/editor/canvas-node.tsx`: `CanvasNodeRenderer` — dynamic fill/text from `data.color`, selected border via `var(--accent-primary)`, 4 source handles on all sides, centered label. `canvas-wrapper.tsx` gains `ReactFlowProvider` (wraps `Canvas`) so `useReactFlow()` is accessible in `canvas.tsx`. `canvas.tsx` adds `nodeTypes`, `onDragOver`, `onDrop` (parses payload, calls `screenToFlowPosition`, creates node centered on cursor via `onNodesChange([{ type: "add", item }])`), and `ShapePanel` rendered in `Panel`. Node IDs generated as `{shape}-{timestamp}-{counter}`.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 10: TBD
+- Feature 13: TBD
 
 ## Open Questions
 
@@ -49,6 +55,10 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - shadcn uses "base-nova" style with @base-ui/react (not Radix) — this is the new default for shadcn 4.x. Do not modify components/ui/* files.
 - Feature spec 01-design-system.md has a typo: `liv/utils.ts` should be `lib/utils.ts` (correct path, confirmed by shadcn components.json alias).
+- Liveblocks `new Liveblocks({ secret })` validates the secret key synchronously at construction time. Eagerly exporting a singleton (`export const liveblocks = new Liveblocks(...)`) causes build failures when `LIVEBLOCKS_SECRET_KEY` is absent. Use a lazy factory (`getLiveblocks()`) that defers construction to first request.
+- `@xyflow/react` `connectionMode` takes a `ConnectionMode` enum (from `@xyflow/react`), not a plain string. Use `ConnectionMode.Loose`, not `"loose"`.
+- `useReactFlow()` requires a parent `ReactFlowProvider` — it cannot be called in the same component that renders `<ReactFlow>`. Wrap `<Canvas>` in `<ReactFlowProvider>` (in `canvas-wrapper.tsx`) so `canvas.tsx` can call `useReactFlow()` before rendering `<ReactFlow>`.
+- `useLiveblocksFlow` returns `onNodesChange` but not `setNodes`. Add nodes programmatically via `onNodesChange([{ type: "add", item: newNode }])`.
 - Tailwind v4: all token config is CSS-first in globals.css via @theme inline — no tailwind.config.js exists or is needed.
 - Next.js 16 renamed middleware.ts → proxy.ts. The Clerk clerkMiddleware export goes in proxy.ts at the project root.
 - Clerk appearance variables use colorForeground (not colorText), colorInput (not colorInputBackground), colorInputForeground (not colorInputText). @clerk/ui/themes provides the dark theme for current SDK (v7+).
