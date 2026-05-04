@@ -45,3 +45,5 @@ next-env.d.ts
 
 # code review artifacts
 /code-reviews
+
+settings.local.json
