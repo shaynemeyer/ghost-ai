@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 14: Node resizing + inline label editing (complete)
+- Feature 15: Floating color toolbar for canvas nodes (complete)
 
 ## Completed
 
@@ -35,13 +35,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 14: Node resizing + inline label editing — `components/editor/canvas-node.tsx` only. `NodeResizer` from `@xyflow/react` renders as the first child of the node root div, visible only when `selected`, with 60×40 minimums and subtle accent-colored handles. Inline label editing: `isEditing`/`editValue` state + `textareaRef`; double-click the label span starts editing (auto-focuses and selects text via `useEffect`); blur commits via `updateNodeData(id, { label })`; Escape discards without committing; `nodrag nopan` classes prevent canvas drag/pan during text input. Resize syncs through the existing `onNodesChange` from `useLiveblocksFlow`; label sync via `useReactFlow().updateNodeData` which `@liveblocks/react-flow` v3 intercepts and pushes to Liveblocks Storage.
 
+- Feature 15: Floating color toolbar — `components/editor/canvas-node.tsx` only. `NODE_COLORS` imported from `types/canvas.ts`. `hoveredSwatch` state tracks which swatch is hovered. When a node is `selected`, a floating pill toolbar appears 8px above the node centered horizontally (`bottom: calc(100% + 8px)`, `left-1/2 -translate-x-1/2`). Renders 8 circular color swatches from `NODE_COLORS`; active swatch shows a 2px ring in its paired text color; hovered swatch shows a tight glow (`${text}40` hex opacity). Clicking a swatch calls `updateNodeData(id, { color })` to update both fill and text colors via Liveblocks. `nodrag nopan` + `onMouseDown stopPropagation` prevent canvas drag/pan during toolbar interaction.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 15: TBD
+- Feature 16: TBD
 
 ## Open Questions
 

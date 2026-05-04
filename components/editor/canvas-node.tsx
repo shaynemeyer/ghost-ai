@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Handle, Position, NodeResizer, useReactFlow, type NodeProps } from "@xyflow/react";
+import { NODE_COLORS } from "@/types/canvas";
 import type { CanvasNode, NodeShape } from "@/types/canvas";
 
 type ShapeBodyProps = {
@@ -78,6 +79,7 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const escapedRef = useRef(false);
   const { updateNodeData } = useReactFlow();
+  const [hoveredSwatch, setHoveredSwatch] = useState<number | null>(null);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -110,6 +112,35 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
 
   return (
     <div className="relative h-full w-full">
+      {selected && (
+        <div
+          className="nodrag nopan absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-surface-border bg-surface px-2 py-1.5 shadow-lg"
+          style={{ bottom: "calc(100% + 8px)" }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {NODE_COLORS.map((color, i) => {
+            const isActive = color.fill === data.color.fill && color.text === data.color.text;
+            const isHovered = hoveredSwatch === i;
+            const shadow = [
+              isActive ? `0 0 0 2px ${color.text}` : null,
+              isHovered ? `0 0 6px 1px ${color.text}40` : null,
+            ]
+              .filter(Boolean)
+              .join(", ") || undefined;
+            return (
+              <button
+                key={i}
+                className="h-4 w-4 shrink-0 cursor-pointer rounded-full transition-transform hover:scale-110"
+                style={{ background: color.fill, boxShadow: shadow }}
+                onMouseEnter={() => setHoveredSwatch(i)}
+                onMouseLeave={() => setHoveredSwatch(null)}
+                onClick={() => updateNodeData(id, { color: NODE_COLORS[i] })}
+                aria-label={`Color option ${i + 1}`}
+              />
+            );
+          })}
+        </div>
+      )}
       <NodeResizer
         isVisible={selected}
         minWidth={60}
