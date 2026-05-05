@@ -88,6 +88,10 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
     }
   }, [isEditing]);
 
+  useEffect(() => {
+    if (!selected) setHoveredSwatch(null);
+  }, [selected]);
+
   function startEditing() {
     setEditValue(data.label);
     setIsEditing(true);
@@ -129,12 +133,13 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
               .join(", ") || undefined;
             return (
               <button
+                type="button"
                 key={i}
                 className="h-4 w-4 shrink-0 cursor-pointer rounded-full transition-transform hover:scale-110"
                 style={{ background: color.fill, boxShadow: shadow }}
                 onMouseEnter={() => setHoveredSwatch(i)}
                 onMouseLeave={() => setHoveredSwatch(null)}
-                onClick={() => updateNodeData(id, { color: NODE_COLORS[i] })}
+                onClick={() => updateNodeData(id, { color })}
                 aria-label={`Color option ${i + 1}`}
               />
             );
