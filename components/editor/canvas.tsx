@@ -13,7 +13,7 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
-import { useUndo, useRedo, useCanUndo, useCanRedo } from "@liveblocks/react";
+import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory } from "@liveblocks/react";
 import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
@@ -21,7 +21,9 @@ import { ZoomIn, ZoomOut, Maximize2, Undo2, Redo2 } from "lucide-react";
 import { CanvasNodeRenderer } from "./canvas-node";
 import { CanvasEdgeRenderer } from "./canvas-edge";
 import { ShapePanel } from "./shape-panel";
+import { StarterTemplatesModal } from "./starter-templates-modal";
 import { NODE_COLORS, type CanvasNode, type CanvasEdge, type NodeShape } from "@/types/canvas";
+import { type CanvasTemplate } from "./starter-templates";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
 function ControlButton({
@@ -54,13 +56,19 @@ function generateNodeId(shape: NodeShape): string {
   return `${shape}-${crypto.randomUUID()}`;
 }
 
-export function Canvas() {
+interface CanvasProps {
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
+}
+
+export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
   const instance = useReactFlow();
   const { screenToFlowPosition } = instance;
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
+  const history = useHistory();
   useKeyboardShortcuts({ instance, undo, redo });
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
@@ -68,6 +76,23 @@ export function Canvas() {
       nodes: { initial: [] },
       edges: { initial: [] },
     });
+
+  const handleImportTemplate = useCallback(
+    (template: CanvasTemplate) => {
+      history.pause();
+      onNodesChange([
+        ...nodes.map((n) => ({ type: "remove" as const, id: n.id })),
+        ...template.nodes.map((n) => ({ type: "add" as const, item: n })),
+      ]);
+      onEdgesChange([
+        ...edges.map((e) => ({ type: "remove" as const, id: e.id })),
+        ...template.edges.map((e) => ({ type: "add" as const, item: e })),
+      ]);
+      history.resume();
+      setTimeout(() => instance.fitView({ duration: 300 }), 50);
+    },
+    [nodes, edges, onNodesChange, onEdgesChange, instance, history]
+  );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -103,6 +128,11 @@ export function Canvas() {
 
   return (
     <div className="h-full w-full">
+      <StarterTemplatesModal
+        open={templatesOpen}
+        onOpenChange={onTemplatesOpenChange}
+        onImport={handleImportTemplate}
+      />
       <ReactFlow
         nodes={nodes}
         edges={edges}

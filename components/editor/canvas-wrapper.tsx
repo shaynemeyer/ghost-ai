@@ -7,6 +7,8 @@ import { Canvas } from "./canvas";
 
 interface CanvasWrapperProps {
   roomId: string;
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
 }
 
 interface ErrorBoundaryState {
@@ -32,7 +34,7 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, ErrorBounda
   }
 }
 
-export function CanvasWrapper({ roomId }: CanvasWrapperProps) {
+export function CanvasWrapper({ roomId, templatesOpen, onTemplatesOpenChange }: CanvasWrapperProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider
@@ -48,7 +50,10 @@ export function CanvasWrapper({ roomId }: CanvasWrapperProps) {
             }
           >
             <ReactFlowProvider>
-              <Canvas />
+              <Canvas
+                templatesOpen={templatesOpen}
+                onTemplatesOpenChange={onTemplatesOpenChange}
+              />
             </ReactFlowProvider>
           </ClientSideSuspense>
         </CanvasErrorBoundary>

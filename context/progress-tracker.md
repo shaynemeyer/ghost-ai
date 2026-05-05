@@ -41,13 +41,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 17: Canvas ergonomics — `hooks/use-keyboard-shortcuts.ts` (new): listens for `keydown` on `window`, guards against inputs/textareas/contentEditable, maps `+`/`=` → zoom in, `-` → zoom out, `Cmd/Ctrl+Z` → undo, `Cmd/Ctrl+Shift+Z` and `Cmd/Ctrl+Y` → redo. `components/editor/canvas.tsx`: `MiniMap` removed; `useUndo`, `useRedo`, `useCanUndo`, `useCanRedo` from `@liveblocks/react` called in `Canvas`; `useKeyboardShortcuts` wired with React Flow instance and history handlers; pill-shaped `ControlButton` local component added; `Panel position="bottom-left"` renders zoom-out / fit-view / zoom-in (with 300ms animation) + divider + undo / redo (dimmed when unavailable).
 
+- Feature 18: Starter templates — `components/editor/starter-templates.ts`: exports `CanvasTemplate` interface and `CANVAS_TEMPLATES` array with three templates (Microservices, CI/CD Pipeline, Event-Driven System); each template contains typed `CanvasNode[]` and `CanvasEdge[]` using `NODE_COLORS` and `SHAPE_DEFAULTS`. `components/editor/starter-templates-modal.tsx`: `Dialog`-based modal listing templates in a scrollable 3-column grid; each card has an inline SVG preview (bounding-box computed, scale+centered, edges as lines between node centers, shapes rendered as native SVG elements matching ShapeBody logic), template name, description, and an Import button. `components/editor/canvas.tsx`: accepts `templatesOpen`/`onTemplatesOpenChange` props; `handleImportTemplate` useCallback removes all current nodes/edges then adds template nodes/edges via `onNodesChange`/`onEdgesChange`, then calls `fitView` after 50 ms; `StarterTemplatesModal` rendered outside `<ReactFlow>`. `components/editor/canvas-wrapper.tsx`: props and pass-through added. `components/editor/workspace-shell.tsx`: `templatesOpen` state + `LayoutTemplate` navbar button (left of Share) wired to modal via `CanvasWrapper`.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 18: TBD
+- Feature 19: TBD
 
 ## Open Questions
 

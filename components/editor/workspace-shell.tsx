@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PanelLeftOpen, PanelLeftClose, Share2, BotMessageSquare } from "lucide-react"
+import { PanelLeftOpen, PanelLeftClose, Share2, BotMessageSquare, LayoutTemplate } from "lucide-react"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { ProjectSidebar } from "./project-sidebar"
@@ -23,6 +23,7 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   const actions = useProjectActions()
 
   return (
@@ -49,6 +50,10 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-2 px-3">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTemplatesOpen(true)}>
+            <LayoutTemplate className="h-4 w-4" />
+            Templates
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShareOpen(true)}>
             <Share2 className="h-4 w-4" />
             Share
@@ -82,7 +87,11 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
 
       <div className="flex h-screen pt-12 overflow-hidden">
         <main className="relative flex-1 overflow-hidden bg-base">
-          <CanvasWrapper roomId={project.id} />
+          <CanvasWrapper
+            roomId={project.id}
+            templatesOpen={templatesOpen}
+            onTemplatesOpenChange={setTemplatesOpen}
+          />
         </main>
 
         {aiSidebarOpen && (
