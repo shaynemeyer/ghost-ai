@@ -37,13 +37,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 15: Floating color toolbar — `components/editor/canvas-node.tsx` only. `NODE_COLORS` imported from `types/canvas.ts`. `hoveredSwatch` state tracks which swatch is hovered. When a node is `selected`, a floating pill toolbar appears 8px above the node centered horizontally (`bottom: calc(100% + 8px)`, `left-1/2 -translate-x-1/2`). Renders 8 circular color swatches from `NODE_COLORS`; active swatch shows a 2px ring in its paired text color; hovered swatch shows a tight glow (`${text}40` hex opacity). Clicking a swatch calls `updateNodeData(id, { color })` to update both fill and text colors via Liveblocks. `nodrag nopan` + `onMouseDown stopPropagation` prevent canvas drag/pan during toolbar interaction.
 
+- Feature 16: Custom edge behavior — `types/canvas.ts` gains `EdgeData` interface (`label?: string`) and `CanvasEdge` updated to use it. `components/editor/canvas-edge.tsx` (new): `CanvasEdgeRenderer` using `getSmoothStepPath` (right-angle routing, borderRadius:8), `BaseEdge` with `interactionWidth=20` for wider hit area, opacity 0.5 at rest / 1.0 on hover or select (`isHovered` state), `EdgeLabelRenderer` for inline label editing (double-click → input grows with text, blur/Enter saves, Escape discards) with faint "label" hint when active but unlabeled. `components/editor/canvas-node.tsx`: container div gains `group` class; all 4 handles updated to `opacity-0! transition-opacity! group-hover:opacity-100! border-zinc-600!` so they fade in on node hover. `components/editor/canvas.tsx`: `BezierEdge` removed, `MarkerType` added, `CanvasEdgeRenderer` imported, `edgeTypes` wired to custom renderer, `defaultEdgeOptions` sets `type:"canvasEdge"` with `ArrowClosed` marker (12×12).
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 16: TBD
+- Feature 17: TBD
 
 ## Open Questions
 

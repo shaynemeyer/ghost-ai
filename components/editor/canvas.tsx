@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import {
   ReactFlow,
   Background,
-  BezierEdge,
+  MarkerType,
   MiniMap,
   BackgroundVariant,
   ConnectionMode,
@@ -18,11 +18,12 @@ import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
 import { CanvasNodeRenderer } from "./canvas-node";
+import { CanvasEdgeRenderer } from "./canvas-edge";
 import { ShapePanel } from "./shape-panel";
 import { NODE_COLORS, type CanvasNode, type CanvasEdge, type NodeShape } from "@/types/canvas";
 
 const nodeTypes: NodeTypes = { canvasNode: CanvasNodeRenderer };
-const edgeTypes: EdgeTypes = { canvasEdge: BezierEdge };
+const edgeTypes: EdgeTypes = { canvasEdge: CanvasEdgeRenderer };
 
 function generateNodeId(shape: NodeShape): string {
   return `${shape}-${crypto.randomUUID()}`;
@@ -83,6 +84,10 @@ export function Canvas() {
         connectionMode={ConnectionMode.Loose}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        defaultEdgeOptions={{
+          type: "canvasEdge",
+          markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
+        }}
         fitView
       >
         <Background variant={BackgroundVariant.Dots} />

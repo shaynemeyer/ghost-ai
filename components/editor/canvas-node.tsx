@@ -115,7 +115,7 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="group relative h-full w-full">
       {selected && (
         <div
           className="nodrag nopan absolute left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-surface-border bg-surface px-2 py-1.5 shadow-lg"
@@ -183,10 +183,10 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
           }
         </span>
       )}
-      <Handle type="target" position={Position.Top} className="bg-white! border-white/40!" />
-      <Handle type="source" position={Position.Right} className="bg-white! border-white/40!" />
-      <Handle type="source" position={Position.Bottom} className="bg-white! border-white/40!" />
-      <Handle type="target" position={Position.Left} className="bg-white! border-white/40!" />
+      <Handle type="target" position={Position.Top} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle type="source" position={Position.Right} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle type="source" position={Position.Bottom} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle type="target" position={Position.Left} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
     </div>
   );
 }
