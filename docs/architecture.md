@@ -111,8 +111,9 @@ erDiagram
 **Storage split:**
 
 - `projects` and `project_collaborators` tables live in PostgreSQL.
-- Canvas content is stored in Vercel Blob at `canvas/{projectId}.json`; the URL is the value of `canvasJsonPath`.
-- Generated specs are stored at `specs/{projectId}/{specId}.md`; the URL is stored in a spec record `filePath` (not yet implemented).
+- Canvas content is synced in real time via Liveblocks Storage (not yet persisted to Vercel Blob).
+- `canvasJsonPath` field is reserved for future Vercel Blob snapshots at `canvas/{projectId}.json`.
+- Generated specs (planned) will be stored at `specs/{projectId}/{specId}.md`; the URL will be stored in a spec record `filePath`.
 
 ---
 
@@ -122,12 +123,20 @@ erDiagram
 ghost-ai/
 ├── app/
 │   ├── api/
+│   │   ├── liveblocks-auth/
+│   │   │   └── route.ts              # POST: issue Liveblocks room token
 │   │   └── projects/
 │   │       ├── route.ts              # GET list, POST create
 │   │       └── [projectId]/
-│   │           └── route.ts          # PATCH rename, DELETE delete
+│   │           ├── route.ts          # PATCH rename, DELETE delete
+│   │           └── collaborators/
+│   │               ├── route.ts      # GET list, POST invite
+│   │               └── [collaboratorId]/
+│   │                   └── route.ts  # DELETE remove collaborator
 │   ├── editor/
-│   │   └── page.tsx                  # SSR: fetch projects, render EditorShell
+│   │   ├── page.tsx                  # SSR: fetch projects, render EditorShell
+│   │   └── [roomId]/
+│   │       └── page.tsx              # SSR: auth + access check, render WorkspaceShell
 │   ├── sign-in/[[...sign-in]]/
 │   ├── sign-up/[[...sign-up]]/
 │   ├── generated/prisma/             # Prisma-generated client (do not edit)
@@ -136,24 +145,39 @@ ghost-ai/
 │   └── page.tsx                      # Root: redirect auth'd → /editor
 ├── components/
 │   ├── editor/
+│   │   ├── access-denied.tsx         # Lock icon + back link for unauthorized access
+│   │   ├── canvas-edge.tsx           # Custom edge: smooth-step routing, inline label editing
+│   │   ├── canvas-node.tsx           # Custom node: shape rendering, resize, color, label editing
+│   │   ├── canvas-wrapper.tsx        # LiveblocksProvider → RoomProvider → Canvas
+│   │   ├── canvas.tsx                # ReactFlow canvas with Liveblocks sync
 │   │   ├── editor-navbar.tsx
-│   │   ├── editor-shell.tsx          # Client wrapper for editor page
+│   │   ├── editor-shell.tsx          # Client wrapper for editor home
 │   │   ├── project-dialogs.tsx
-│   │   └── project-sidebar.tsx
+│   │   ├── project-sidebar.tsx
+│   │   ├── shape-panel.tsx           # Draggable shape toolbar (bottom-center)
+│   │   ├── share-dialog.tsx          # Invite collaborators, list/remove members
+│   │   ├── starter-templates-modal.tsx # Template picker with SVG previews
+│   │   ├── starter-templates.ts      # CANVAS_TEMPLATES (Microservices, CI/CD, Event-Driven)
+│   │   └── workspace-shell.tsx       # Workspace layout: navbar, sidebar, canvas, AI sidebar
 │   └── ui/                           # shadcn/ui components (do not edit)
 ├── hooks/
+│   ├── use-keyboard-shortcuts.ts     # Zoom ±, undo/redo keyboard bindings
 │   └── use-project-actions.ts        # Dialog state + API mutations
 ├── lib/
+│   ├── liveblocks.ts                 # getLiveblocks() lazy factory + getUserCursorColor()
 │   ├── prisma.ts                     # Singleton PrismaClient with PrismaPg + Accelerate
+│   ├── project-access.ts             # getCurrentIdentity(), getProjectWithAccess()
 │   ├── projects.ts                   # Server-only DB query helpers
 │   ├── slug.ts
-│   └── utils.ts                      # cn() helper
+│   ├── utils.ts                      # cn() helper
+│   └── validation.ts
 ├── prisma/
 │   ├── schema.prisma                 # Generator + datasource
 │   ├── models/
 │   │   └── project.prisma            # Project + ProjectCollaborator models
 │   └── migrations/
 ├── types/
+│   ├── canvas.ts                     # NODE_COLORS, NODE_SHAPES, NodeData, CanvasNode, CanvasEdge
 │   └── project.ts                    # Re-exports Prisma Project type
 ├── context/                          # Living documentation (not shipped)
 ├── proxy.ts                          # Clerk middleware (Next.js 16 convention)
@@ -165,14 +189,18 @@ ghost-ai/
 
 ## API Routes
 
-| Method   | Path                        | Auth       | Description                               |
-| -------- | --------------------------- | ---------- | ----------------------------------------- |
-| `GET`    | `/api/projects`             | Required   | List caller's owned projects              |
-| `POST`   | `/api/projects`             | Required   | Create a project (owner = caller)         |
-| `PATCH`  | `/api/projects/[projectId]` | Owner only | Rename a project                          |
-| `DELETE` | `/api/projects/[projectId]` | Owner only | Delete a project (cascades collaborators) |
+| Method   | Path                                                           | Auth            | Description                               |
+| -------- | -------------------------------------------------------------- | --------------- | ----------------------------------------- |
+| `GET`    | `/api/projects`                                                | Required        | List caller's owned projects              |
+| `POST`   | `/api/projects`                                                | Required        | Create a project (owner = caller)         |
+| `PATCH`  | `/api/projects/[projectId]`                                    | Owner only      | Rename a project                          |
+| `DELETE` | `/api/projects/[projectId]`                                    | Owner only      | Delete a project (cascades collaborators) |
+| `GET`    | `/api/projects/[projectId]/collaborators`                      | Member          | List collaborators (enriched via Clerk)   |
+| `POST`   | `/api/projects/[projectId]/collaborators`                      | Owner only      | Invite a collaborator by email            |
+| `DELETE` | `/api/projects/[projectId]/collaborators/[collaboratorId]`     | Owner only      | Remove a collaborator                     |
+| `POST`   | `/api/liveblocks-auth`                                         | Member          | Issue a Liveblocks room access token      |
 
-All routes return `401` for unauthenticated requests and `403` for non-owner mutations.
+All routes return `401` for unauthenticated requests and `403` for non-owner/non-member mutations.
 
 ---
 
@@ -183,6 +211,34 @@ All routes return `401` for unauthenticated requests and `403` for non-owner mut
 - Rename and delete are **owner-only**.
 - Liveblocks room tokens will be issued only after verifying project membership (owner or collaborator).
 - Route protection uses Clerk's `proxy.ts` middleware (Next.js 16 naming convention for `middleware.ts`).
+
+---
+
+## Canvas Architecture
+
+The canvas is built on React Flow + Liveblocks. All node/edge state lives in Liveblocks Storage and is synced in real time across collaborators via `useLiveblocksFlow`.
+
+```mermaid
+graph TD
+    WorkspaceShell["WorkspaceShell"] --> CanvasWrapper["CanvasWrapper"]
+    CanvasWrapper --> LiveblocksProvider["LiveblocksProvider (authEndpoint /api/liveblocks-auth)"]
+    LiveblocksProvider --> RoomProvider["RoomProvider (id = projectId)"]
+    RoomProvider --> Canvas["Canvas (ReactFlow)"]
+    Canvas --> useLiveblocksFlow["useLiveblocksFlow (Storage sync)"]
+    Canvas --> ShapePanel["ShapePanel (drag-to-add shapes)"]
+    Canvas --> ControlBar["Control bar (zoom, undo/redo)"]
+    Canvas --> StarterTemplatesModal["StarterTemplatesModal"]
+    Canvas --> CanvasNodeRenderer["CanvasNodeRenderer (per-node)"]
+    Canvas --> CanvasEdgeRenderer["CanvasEdgeRenderer (per-edge)"]
+```
+
+**Node capabilities:** 6 shapes (rectangle, diamond, circle, pill, cylinder, hexagon), 8 color themes, drag-to-add from shape panel, inline label editing (double-click), resize handles, floating color picker toolbar.
+
+**Edge capabilities:** Smooth-step routing with rounded corners, wide (20px) click hit area, opacity fade at rest, inline label editing (double-click), ArrowClosed marker.
+
+**Ergonomics:** Keyboard shortcuts (`+`/`-` zoom, `Cmd+Z`/`Cmd+Shift+Z` undo/redo), floating control bar (bottom-left), starter templates modal with inline SVG previews.
+
+**Liveblocks Presence:** `cursor: {x,y}|null`, `isThinking: boolean`. Cursor color is deterministically assigned per-user from a 10-color palette.
 
 ---
 
@@ -217,16 +273,25 @@ flowchart LR
 
 ## Implementation Status
 
-| Feature                                                   | Status  |
-| --------------------------------------------------------- | ------- |
-| Design system (shadcn/ui, Tailwind v4, tokens)            | Done    |
-| Editor chrome (navbar, sidebar)                           | Done    |
-| Authentication (Clerk, sign-in/sign-up, route protection) | Done    |
-| Project dialogs and editor home UI                        | Done    |
-| Prisma data models + migration                            | Done    |
-| Project REST API (list, create, rename, delete)           | Done    |
-| Wire editor home to real API                              | Done    |
-| Liveblocks canvas + real-time collaboration               | Planned |
-| Starter system design templates                           | Planned |
-| AI design generation (Trigger.dev + Claude)               | Planned |
-| Spec generation + download                                | Planned |
+| Feature                                                             | Status  |
+| ------------------------------------------------------------------- | ------- |
+| Design system (shadcn/ui, Tailwind v4, tokens)                      | Done    |
+| Editor chrome (navbar, sidebar)                                     | Done    |
+| Authentication (Clerk, sign-in/sign-up, route protection)           | Done    |
+| Project dialogs and editor home UI                                  | Done    |
+| Prisma data models + migration                                      | Done    |
+| Project REST API (list, create, rename, delete)                     | Done    |
+| Wire editor home to real API                                        | Done    |
+| Workspace shell (per-project route, access-denied, share dialog)    | Done    |
+| Collaborator API (invite, list, remove + Clerk enrichment)          | Done    |
+| Liveblocks auth + presence (cursor color, isThinking)               | Done    |
+| Base canvas (LiveblocksProvider, RoomProvider, ReactFlow)           | Done    |
+| Shape panel + drag-to-add                                           | Done    |
+| Node shape rendering + drag preview                                 | Done    |
+| Node resizing + inline label editing                                | Done    |
+| Floating color toolbar                                              | Done    |
+| Custom edges (smooth-step, wide hit area, inline labels)            | Done    |
+| Canvas ergonomics (keyboard shortcuts, control bar, undo/redo)      | Done    |
+| Starter templates (3 templates, SVG preview, import to canvas)      | Done    |
+| AI design generation (Trigger.dev + Claude)                         | Planned |
+| Spec generation + download                                          | Planned |
