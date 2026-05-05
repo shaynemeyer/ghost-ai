@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 15: Floating color toolbar for canvas nodes (complete)
+- Feature 17: Canvas ergonomics (complete)
 
 ## Completed
 
@@ -39,13 +39,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 16: Custom edge behavior — `types/canvas.ts` gains `EdgeData` interface (`label?: string`) and `CanvasEdge` updated to use it. `components/editor/canvas-edge.tsx` (new): `CanvasEdgeRenderer` using `getSmoothStepPath` (right-angle routing, borderRadius:8), `BaseEdge` with `interactionWidth=20` for wider hit area, opacity 0.5 at rest / 1.0 on hover or select (`isHovered` state), `EdgeLabelRenderer` for inline label editing (double-click → input grows with text, blur/Enter saves, Escape discards) with faint "label" hint when active but unlabeled. `components/editor/canvas-node.tsx`: container div gains `group` class; all 4 handles updated to `opacity-0! transition-opacity! group-hover:opacity-100! border-zinc-600!` so they fade in on node hover. `components/editor/canvas.tsx`: `BezierEdge` removed, `MarkerType` added, `CanvasEdgeRenderer` imported, `edgeTypes` wired to custom renderer, `defaultEdgeOptions` sets `type:"canvasEdge"` with `ArrowClosed` marker (12×12).
 
+- Feature 17: Canvas ergonomics — `hooks/use-keyboard-shortcuts.ts` (new): listens for `keydown` on `window`, guards against inputs/textareas/contentEditable, maps `+`/`=` → zoom in, `-` → zoom out, `Cmd/Ctrl+Z` → undo, `Cmd/Ctrl+Shift+Z` and `Cmd/Ctrl+Y` → redo. `components/editor/canvas.tsx`: `MiniMap` removed; `useUndo`, `useRedo`, `useCanUndo`, `useCanRedo` from `@liveblocks/react` called in `Canvas`; `useKeyboardShortcuts` wired with React Flow instance and history handlers; pill-shaped `ControlButton` local component added; `Panel position="bottom-left"` renders zoom-out / fit-view / zoom-in (with 300ms animation) + divider + undo / redo (dimmed when unavailable).
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 17: TBD
+- Feature 18: TBD
 
 ## Open Questions
 

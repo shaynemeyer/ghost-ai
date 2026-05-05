@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   MarkerType,
-  MiniMap,
   BackgroundVariant,
   ConnectionMode,
   Panel,
@@ -14,13 +13,39 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
+import { useUndo, useRedo, useCanUndo, useCanRedo } from "@liveblocks/react";
 import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
+import { ZoomIn, ZoomOut, Maximize2, Undo2, Redo2 } from "lucide-react";
 import { CanvasNodeRenderer } from "./canvas-node";
 import { CanvasEdgeRenderer } from "./canvas-edge";
 import { ShapePanel } from "./shape-panel";
 import { NODE_COLORS, type CanvasNode, type CanvasEdge, type NodeShape } from "@/types/canvas";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+
+function ControlButton({
+  onClick,
+  disabled,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="flex h-6 w-6 items-center justify-center rounded-full text-copy-secondary transition-colors hover:bg-zinc-800 hover:text-copy-primary disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      {children}
+    </button>
+  );
+}
 
 const nodeTypes: NodeTypes = { canvasNode: CanvasNodeRenderer };
 const edgeTypes: EdgeTypes = { canvasEdge: CanvasEdgeRenderer };
@@ -30,7 +55,13 @@ function generateNodeId(shape: NodeShape): string {
 }
 
 export function Canvas() {
-  const { screenToFlowPosition } = useReactFlow();
+  const instance = useReactFlow();
+  const { screenToFlowPosition } = instance;
+  const undo = useUndo();
+  const redo = useRedo();
+  const canUndo = useCanUndo();
+  const canRedo = useCanRedo();
+  useKeyboardShortcuts({ instance, undo, redo });
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
@@ -91,8 +122,27 @@ export function Canvas() {
         fitView
       >
         <Background variant={BackgroundVariant.Dots} />
-        <MiniMap />
         <Cursors />
+        <Panel position="bottom-left" style={{ marginLeft: process.env.NODE_ENV === "development" ? "60px" : "16px", marginBottom: "16px" }}>
+          <div className="flex items-center gap-0.5 rounded-full border border-zinc-800 bg-zinc-900/90 px-2 py-1.5 shadow-lg backdrop-blur-sm">
+            <ControlButton onClick={() => instance.zoomOut({ duration: 300 })} title="Zoom out">
+              <ZoomOut className="h-3.5 w-3.5" />
+            </ControlButton>
+            <ControlButton onClick={() => instance.fitView({ duration: 300 })} title="Fit view">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </ControlButton>
+            <ControlButton onClick={() => instance.zoomIn({ duration: 300 })} title="Zoom in">
+              <ZoomIn className="h-3.5 w-3.5" />
+            </ControlButton>
+            <div className="mx-1.5 h-4 w-px bg-zinc-700" />
+            <ControlButton onClick={undo} disabled={!canUndo} title="Undo">
+              <Undo2 className="h-3.5 w-3.5" />
+            </ControlButton>
+            <ControlButton onClick={redo} disabled={!canRedo} title="Redo">
+              <Redo2 className="h-3.5 w-3.5" />
+            </ControlButton>
+          </div>
+        </Panel>
         <Panel position="bottom-center" className="mb-4">
           <ShapePanel />
         </Panel>
