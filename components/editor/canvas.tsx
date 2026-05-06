@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -25,6 +25,7 @@ import { StarterTemplatesModal } from "./starter-templates-modal";
 import { NODE_COLORS, type CanvasNode, type CanvasEdge, type NodeShape } from "@/types/canvas";
 import { type CanvasTemplate } from "./starter-templates";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useCanvasAutosave, type SaveStatus } from "@/hooks/use-canvas-autosave";
 import { PresenceAvatars } from "./presence-avatars";
 
 function ControlButton({
@@ -58,11 +59,13 @@ function generateNodeId(shape: NodeShape): string {
 }
 
 interface CanvasProps {
+  projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange: (status: SaveStatus) => void;
 }
 
-export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
+export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSaveStatusChange }: CanvasProps) {
   const instance = useReactFlow();
   const { screenToFlowPosition } = instance;
   const updateMyPresence = useUpdateMyPresence();
@@ -78,6 +81,37 @@ export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
       nodes: { initial: [] },
       edges: { initial: [] },
     });
+
+  // Load saved canvas when room is empty on first mount.
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (loadedRef.current) return;
+    if (nodes.length > 0 || edges.length > 0) {
+      loadedRef.current = true;
+      return;
+    }
+    loadedRef.current = true;
+
+    fetch(`/api/projects/${projectId}/canvas`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { canvas: { nodes: CanvasNode[]; edges: CanvasEdge[] } | null } | null) => {
+        if (!data?.canvas) return;
+        const { nodes: savedNodes, edges: savedEdges } = data.canvas;
+        if (!savedNodes?.length && !savedEdges?.length) return;
+        history.pause();
+        onNodesChange(savedNodes.map((n) => ({ type: "add" as const, item: n })));
+        onEdgesChange(savedEdges.map((e) => ({ type: "add" as const, item: e })));
+        history.resume();
+        setTimeout(() => instance.fitView({ duration: 300 }), 50);
+      })
+      .catch(() => undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveStatus = useCanvasAutosave(projectId, nodes, edges, true);
+  useEffect(() => {
+    onSaveStatusChange(saveStatus);
+  }, [saveStatus, onSaveStatusChange]);
 
   const handleImportTemplate = useCallback(
     (template: CanvasTemplate) => {

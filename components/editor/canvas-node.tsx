@@ -183,10 +183,10 @@ export function CanvasNodeRenderer({ id, data, selected }: NodeProps<CanvasNode>
           }
         </span>
       )}
-      <Handle type="target" position={Position.Top} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
-      <Handle type="source" position={Position.Right} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
-      <Handle type="source" position={Position.Bottom} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
-      <Handle type="target" position={Position.Left} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle id="top" type="source" position={Position.Top} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle id="right" type="source" position={Position.Right} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle id="bottom" type="source" position={Position.Bottom} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
+      <Handle id="left" type="source" position={Position.Left} className="bg-white! border-zinc-600! opacity-0! transition-opacity! group-hover:opacity-100!" />
     </div>
   );
 }

@@ -7,8 +7,10 @@ import { Canvas } from "./canvas";
 
 interface CanvasWrapperProps {
   roomId: string;
+  projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange: (status: import("@/hooks/use-canvas-autosave").SaveStatus) => void;
 }
 
 interface ErrorBoundaryState {
@@ -34,7 +36,7 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, ErrorBounda
   }
 }
 
-export function CanvasWrapper({ roomId, templatesOpen, onTemplatesOpenChange }: CanvasWrapperProps) {
+export function CanvasWrapper({ roomId, projectId, templatesOpen, onTemplatesOpenChange, onSaveStatusChange }: CanvasWrapperProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider
@@ -51,8 +53,10 @@ export function CanvasWrapper({ roomId, templatesOpen, onTemplatesOpenChange }: 
           >
             <ReactFlowProvider>
               <Canvas
+                projectId={projectId}
                 templatesOpen={templatesOpen}
                 onTemplatesOpenChange={onTemplatesOpenChange}
+                onSaveStatusChange={onSaveStatusChange}
               />
             </ReactFlowProvider>
           </ClientSideSuspense>

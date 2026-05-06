@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { PanelLeftOpen, PanelLeftClose, Share2, BotMessageSquare, LayoutTemplate } from "lucide-react"
+import { PanelLeftOpen, PanelLeftClose, Share2, BotMessageSquare, LayoutTemplate, Cloud, CloudOff, Loader2 } from "lucide-react"
+import type { SaveStatus } from "@/hooks/use-canvas-autosave"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
 import { ProjectSidebar } from "./project-sidebar"
@@ -25,6 +26,7 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
   const [aiSidebarOpen, setAiSidebarOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle")
   const actions = useProjectActions()
 
   return (
@@ -51,6 +53,21 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
         </div>
         <div className="flex-1" />
         <div className="flex items-center gap-2 px-3">
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1 text-xs text-copy-muted">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="flex items-center gap-1 text-xs text-copy-muted">
+              <Cloud className="h-3 w-3" /> Saved
+            </span>
+          )}
+          {saveStatus === "error" && (
+            <span className="flex items-center gap-1 text-xs text-red-400">
+              <CloudOff className="h-3 w-3" /> Save failed
+            </span>
+          )}
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTemplatesOpen(true)}>
             <LayoutTemplate className="h-4 w-4" />
             Templates
@@ -90,8 +107,10 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
         <main className="relative flex-1 overflow-hidden bg-base">
           <CanvasWrapper
             roomId={project.id}
+            projectId={project.id}
             templatesOpen={templatesOpen}
             onTemplatesOpenChange={setTemplatesOpen}
+            onSaveStatusChange={setSaveStatus}
           />
         </main>
       </div>

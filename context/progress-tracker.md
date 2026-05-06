@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 20: AI sidebar shell (complete)
+- Feature 21: Canvas autosave (complete)
 
 ## Completed
 
@@ -47,13 +47,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 20: AI sidebar shell — `components/editor/ai-sidebar.tsx` (new): floating fixed panel on right, slides in/out via `translate-x` with `duration-200`. Header has Bot icon, "AI Workspace" title, "Collaborate with Ghost AI" subtitle, close button. Two tabs ("AI Architect", "Specs") using shadcn `Tabs` with `data-active:bg-accent-dim data-active:text-brand` styling. AI Architect tab: empty state with bot icon, description, and three starter prompt chips; messages list (user right-aligned `bg-accent-dim border-brand/50`, assistant left-aligned `bg-elevated border-surface-border`); auto-resizing textarea input (72px min / 160px max), Enter-to-send, Shift+Enter for newline, send button `bg-brand`. Specs tab: "Generate Spec" button `bg-brand`, demo spec card with `bg-elevated border-surface-border`, file icon, title, snippet, disabled download action. `components/editor/workspace-shell.tsx`: inline aside placeholder replaced with `<AiSidebar isOpen={aiSidebarOpen} onClose={…} />`; canvas wrapper no longer shares layout flex row with the sidebar.
 
+- Feature 21: Canvas autosave — `@vercel/blob` installed. `prisma/models/project.prisma`: `canvasJsonPath` renamed to `canvasBlobUrl`. Migration applied. `app/api/projects/[projectId]/canvas/route.ts`: GET reads blob URL from Prisma and fetches JSON from Vercel Blob; PUT uploads canvas JSON to Vercel Blob and stores returned URL on Prisma project. `hooks/use-canvas-autosave.ts`: watches nodes/edges, debounces 2 s, PUTs to canvas API, tracks `SaveStatus` (idle/saving/saved/error). `components/editor/canvas.tsx`: on mount loads saved canvas JSON if room is empty (skips if nodes/edges already present), wires autosave hook and reports status via `onSaveStatusChange` callback. `components/editor/canvas-wrapper.tsx`: passes `projectId` and `onSaveStatusChange` through to `Canvas`. `components/editor/workspace-shell.tsx`: `saveStatus` state, small status chip (Loader2/Cloud/CloudOff icon + label) shown in navbar when saving/saved/error.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 21: TBD
+- Feature 22: TBD
 
 ## Open Questions
 
