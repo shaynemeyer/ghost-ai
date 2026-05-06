@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 17: Canvas ergonomics (complete)
+- Feature 20: AI sidebar shell (complete)
 
 ## Completed
 
@@ -45,13 +45,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 19: Presence avatars + live cursors — `liveblocks.config.ts`: renamed `isThinking` → `thinking` in `Presence` type. `components/editor/canvas-wrapper.tsx`: `initialPresence` updated to `{ cursor: null, thinking: false }`. `components/editor/presence-avatars.tsx` (new): `useOthers` filters out current Clerk user by ID; shows up to 5 collaborator avatars (image or initials fallback, ring, cursorColor background) in an overlapping stack with +N chip; divider only when collaborators exist; `UserButton` sized to match. Rendered in a pill-shaped container. `components/editor/canvas.tsx`: `useUpdateMyPresence` called to broadcast `cursor` on `onMouseMove` (via `screenToFlowPosition`) and clear to null on `onMouseLeave`; `PresenceAvatars` rendered in `Panel position="top-right"` inside the React Flow canvas. Existing `<Cursors />` from `@liveblocks/react-flow` renders colored SVG pointers with name labels for other users automatically.
 
+- Feature 20: AI sidebar shell — `components/editor/ai-sidebar.tsx` (new): floating fixed panel on right, slides in/out via `translate-x` with `duration-200`. Header has Bot icon, "AI Workspace" title, "Collaborate with Ghost AI" subtitle, close button. Two tabs ("AI Architect", "Specs") using shadcn `Tabs` with `data-active:bg-accent-dim data-active:text-brand` styling. AI Architect tab: empty state with bot icon, description, and three starter prompt chips; messages list (user right-aligned `bg-accent-dim border-brand/50`, assistant left-aligned `bg-elevated border-surface-border`); auto-resizing textarea input (72px min / 160px max), Enter-to-send, Shift+Enter for newline, send button `bg-brand`. Specs tab: "Generate Spec" button `bg-brand`, demo spec card with `bg-elevated border-surface-border`, file icon, title, snippet, disabled download action. `components/editor/workspace-shell.tsx`: inline aside placeholder replaced with `<AiSidebar isOpen={aiSidebarOpen} onClose={…} />`; canvas wrapper no longer shares layout flex row with the sidebar.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 20: TBD
+- Feature 21: TBD
 
 ## Open Questions
 

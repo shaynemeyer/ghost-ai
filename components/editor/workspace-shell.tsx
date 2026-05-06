@@ -8,6 +8,7 @@ import { ProjectSidebar } from "./project-sidebar"
 import { ProjectDialogs } from "./project-dialogs"
 import { ShareDialog } from "./share-dialog"
 import { CanvasWrapper } from "./canvas-wrapper"
+import { AiSidebar } from "./ai-sidebar"
 import { Button } from "@/components/ui/button"
 import { useProjectActions } from "@/hooks/use-project-actions"
 import { type Project } from "@/types/project"
@@ -93,13 +94,9 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
             onTemplatesOpenChange={setTemplatesOpen}
           />
         </main>
-
-        {aiSidebarOpen && (
-          <aside className="w-80 shrink-0 border-l border-surface-border bg-surface flex items-center justify-center">
-            <span className="text-sm text-copy-faint">AI chat coming soon</span>
-          </aside>
-        )}
       </div>
+
+      <AiSidebar isOpen={aiSidebarOpen} onClose={() => setAiSidebarOpen(false)} />
 
       <ProjectDialogs actions={actions} />
 
