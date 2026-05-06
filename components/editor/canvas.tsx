@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -84,10 +84,12 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
 
   // Load saved canvas when room is empty on first mount.
   const loadedRef = useRef(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
     if (loadedRef.current) return;
     if (nodes.length > 0 || edges.length > 0) {
       loadedRef.current = true;
+      setIsLoaded(true);
       return;
     }
     loadedRef.current = true;
@@ -95,20 +97,23 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
     fetch(`/api/projects/${projectId}/canvas`)
       .then((r) => r.ok ? r.json() : null)
       .then((data: { canvas: { nodes: CanvasNode[]; edges: CanvasEdge[] } | null } | null) => {
-        if (!data?.canvas) return;
-        const { nodes: savedNodes, edges: savedEdges } = data.canvas;
-        if (!savedNodes?.length && !savedEdges?.length) return;
-        history.pause();
-        onNodesChange(savedNodes.map((n) => ({ type: "add" as const, item: n })));
-        onEdgesChange(savedEdges.map((e) => ({ type: "add" as const, item: e })));
-        history.resume();
-        setTimeout(() => instance.fitView({ duration: 300 }), 50);
+        if (data?.canvas) {
+          const { nodes: savedNodes, edges: savedEdges } = data.canvas;
+          if (savedNodes?.length || savedEdges?.length) {
+            history.pause();
+            onNodesChange(savedNodes.map((n) => ({ type: "add" as const, item: n })));
+            onEdgesChange(savedEdges.map((e) => ({ type: "add" as const, item: e })));
+            history.resume();
+            setTimeout(() => instance.fitView({ duration: 300 }), 50);
+          }
+        }
       })
-      .catch(() => undefined);
+      .catch((err) => console.error("Failed to load canvas:", err))
+      .finally(() => setIsLoaded(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveStatus = useCanvasAutosave(projectId, nodes, edges, true);
+  const saveStatus = useCanvasAutosave(projectId, nodes, edges, true, isLoaded);
   useEffect(() => {
     onSaveStatusChange(saveStatus);
   }, [saveStatus, onSaveStatusChange]);

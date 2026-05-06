@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { get, put } from '@vercel/blob';
 import { prisma } from '@/lib/prisma';
 import { getCurrentIdentity, getProjectWithAccess } from '@/lib/project-access';
 import { isValidProjectId } from '@/lib/validation';
@@ -31,10 +31,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ canvas: null });
   }
 
-  const res = await fetch(project.canvasBlobUrl);
-  if (!res.ok) return NextResponse.json({ canvas: null });
+  const result = await get(project.canvasBlobUrl, { access: 'private' });
+  if (!result || result.statusCode !== 200) return NextResponse.json({ canvas: null });
 
-  const canvas = await res.json();
+  const canvas = await new Response(result.stream).json();
   return NextResponse.json({ canvas });
 }
 

@@ -11,20 +11,28 @@ export function useCanvasAutosave(
   projectId: string,
   nodes: CanvasNode[],
   edges: CanvasEdge[],
-  enabled: boolean
+  enabled: boolean,
+  isLoaded: boolean
 ) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
+  const lastSavedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !isLoaded) return;
 
-    // Skip the very first render — we only save on changes, not on initial mount.
+    const payload = JSON.stringify({ nodes, edges });
+
+    // Skip the very first render after load — we only save on changes.
     if (!initializedRef.current) {
       initializedRef.current = true;
+      lastSavedRef.current = payload;
       return;
     }
+
+    // Skip if content hasn't changed — avoids saving remote collaborator updates.
+    if (payload === lastSavedRef.current) return;
 
     if (timerRef.current) clearTimeout(timerRef.current);
 
@@ -34,9 +42,10 @@ export function useCanvasAutosave(
         const res = await fetch(`/api/projects/${projectId}/canvas`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nodes, edges }),
+          body: payload,
         });
         if (!res.ok) throw new Error("Save failed");
+        lastSavedRef.current = payload;
         setStatus("saved");
       } catch {
         setStatus("error");
@@ -46,7 +55,7 @@ export function useCanvasAutosave(
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [projectId, nodes, edges, enabled]);
+  }, [projectId, nodes, edges, enabled, isLoaded]);
 
   return status;
 }

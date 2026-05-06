@@ -5,7 +5,6 @@ import { Bot, X, FileText, Download, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 interface Message {
@@ -42,7 +41,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
     if (!text) return
     setMessages((prev) => [
       ...prev,
-      { id: `${Date.now()}-u`, role: "user", content: text },
+      { id: crypto.randomUUID(), role: "user", content: text },
     ])
     setInput("")
   }
