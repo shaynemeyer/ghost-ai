@@ -13,7 +13,7 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
-import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory } from "@liveblocks/react";
+import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory, useUpdateMyPresence } from "@liveblocks/react";
 import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
@@ -25,6 +25,7 @@ import { StarterTemplatesModal } from "./starter-templates-modal";
 import { NODE_COLORS, type CanvasNode, type CanvasEdge, type NodeShape } from "@/types/canvas";
 import { type CanvasTemplate } from "./starter-templates";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { PresenceAvatars } from "./presence-avatars";
 
 function ControlButton({
   onClick,
@@ -64,6 +65,7 @@ interface CanvasProps {
 export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
   const instance = useReactFlow();
   const { screenToFlowPosition } = instance;
+  const updateMyPresence = useUpdateMyPresence();
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
@@ -126,6 +128,17 @@ export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
     [screenToFlowPosition, onNodesChange]
   );
 
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      updateMyPresence({ cursor: screenToFlowPosition({ x: e.clientX, y: e.clientY }) });
+    },
+    [screenToFlowPosition, updateMyPresence]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    updateMyPresence({ cursor: null });
+  }, [updateMyPresence]);
+
   return (
     <div className="h-full w-full">
       <StarterTemplatesModal
@@ -145,6 +158,8 @@ export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
         connectionMode={ConnectionMode.Loose}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         defaultEdgeOptions={{
           type: "canvasEdge",
           markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
@@ -153,6 +168,9 @@ export function Canvas({ templatesOpen, onTemplatesOpenChange }: CanvasProps) {
       >
         <Background variant={BackgroundVariant.Dots} />
         <Cursors />
+        <Panel position="top-right" style={{ marginTop: "16px", marginRight: "16px" }}>
+          <PresenceAvatars />
+        </Panel>
         <Panel position="bottom-left" style={{ marginLeft: process.env.NODE_ENV === "development" ? "60px" : "16px", marginBottom: "16px" }}>
           <div className="flex items-center gap-0.5 rounded-full border border-zinc-800 bg-zinc-900/90 px-2 py-1.5 shadow-lg backdrop-blur-sm">
             <ControlButton onClick={() => instance.zoomOut({ duration: 300 })} title="Zoom out">

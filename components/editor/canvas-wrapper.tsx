@@ -39,7 +39,7 @@ export function CanvasWrapper({ roomId, templatesOpen, onTemplatesOpenChange }: 
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <RoomProvider
         id={roomId}
-        initialPresence={{ cursor: null, isThinking: false }}
+        initialPresence={{ cursor: null, thinking: false }}
       >
         <CanvasErrorBoundary>
           <ClientSideSuspense

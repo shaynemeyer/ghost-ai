@@ -43,13 +43,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 18: Starter templates — `components/editor/starter-templates.ts`: exports `CanvasTemplate` interface and `CANVAS_TEMPLATES` array with three templates (Microservices, CI/CD Pipeline, Event-Driven System); each template contains typed `CanvasNode[]` and `CanvasEdge[]` using `NODE_COLORS` and `SHAPE_DEFAULTS`. `components/editor/starter-templates-modal.tsx`: `Dialog`-based modal listing templates in a scrollable 3-column grid; each card has an inline SVG preview (bounding-box computed, scale+centered, edges as lines between node centers, shapes rendered as native SVG elements matching ShapeBody logic), template name, description, and an Import button. `components/editor/canvas.tsx`: accepts `templatesOpen`/`onTemplatesOpenChange` props; `handleImportTemplate` useCallback removes all current nodes/edges then adds template nodes/edges via `onNodesChange`/`onEdgesChange`, then calls `fitView` after 50 ms; `StarterTemplatesModal` rendered outside `<ReactFlow>`. `components/editor/canvas-wrapper.tsx`: props and pass-through added. `components/editor/workspace-shell.tsx`: `templatesOpen` state + `LayoutTemplate` navbar button (left of Share) wired to modal via `CanvasWrapper`.
 
+- Feature 19: Presence avatars + live cursors — `liveblocks.config.ts`: renamed `isThinking` → `thinking` in `Presence` type. `components/editor/canvas-wrapper.tsx`: `initialPresence` updated to `{ cursor: null, thinking: false }`. `components/editor/presence-avatars.tsx` (new): `useOthers` filters out current Clerk user by ID; shows up to 5 collaborator avatars (image or initials fallback, ring, cursorColor background) in an overlapping stack with +N chip; divider only when collaborators exist; `UserButton` sized to match. Rendered in a pill-shaped container. `components/editor/canvas.tsx`: `useUpdateMyPresence` called to broadcast `cursor` on `onMouseMove` (via `screenToFlowPosition`) and clear to null on `onMouseLeave`; `PresenceAvatars` rendered in `Panel position="top-right"` inside the React Flow canvas. Existing `<Cursors />` from `@liveblocks/react-flow` renders colored SVG pointers with name labels for other users automatically.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 19: TBD
+- Feature 20: TBD
 
 ## Open Questions
 

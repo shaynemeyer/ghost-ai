@@ -2,7 +2,7 @@ declare global {
   interface Liveblocks {
     Presence: {
       cursor: { x: number; y: number } | null;
-      isThinking: boolean;
+      thinking: boolean;
     };
 
     // useLiveblocksFlow writes the React Flow graph under "__liveblocksFlow" at runtime.
