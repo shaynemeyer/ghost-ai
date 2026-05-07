@@ -1,12 +1,11 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react";
+import { ClientSideSuspense } from "@liveblocks/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Canvas } from "./canvas";
 
 interface CanvasWrapperProps {
-  roomId: string;
   projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
@@ -36,32 +35,25 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, ErrorBounda
   }
 }
 
-export function CanvasWrapper({ roomId, projectId, templatesOpen, onTemplatesOpenChange, onSaveStatusChange }: CanvasWrapperProps) {
+export function CanvasWrapper({ projectId, templatesOpen, onTemplatesOpenChange, onSaveStatusChange }: CanvasWrapperProps) {
   return (
-    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
-      <RoomProvider
-        id={roomId}
-        initialPresence={{ cursor: null, thinking: false }}
+    <CanvasErrorBoundary>
+      <ClientSideSuspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <span className="text-sm text-copy-faint">Connecting...</span>
+          </div>
+        }
       >
-        <CanvasErrorBoundary>
-          <ClientSideSuspense
-            fallback={
-              <div className="flex h-full items-center justify-center">
-                <span className="text-sm text-copy-faint">Connecting...</span>
-              </div>
-            }
-          >
-            <ReactFlowProvider>
-              <Canvas
-                projectId={projectId}
-                templatesOpen={templatesOpen}
-                onTemplatesOpenChange={onTemplatesOpenChange}
-                onSaveStatusChange={onSaveStatusChange}
-              />
-            </ReactFlowProvider>
-          </ClientSideSuspense>
-        </CanvasErrorBoundary>
-      </RoomProvider>
-    </LiveblocksProvider>
+        <ReactFlowProvider>
+          <Canvas
+            projectId={projectId}
+            templatesOpen={templatesOpen}
+            onTemplatesOpenChange={onTemplatesOpenChange}
+            onSaveStatusChange={onSaveStatusChange}
+          />
+        </ReactFlowProvider>
+      </ClientSideSuspense>
+    </CanvasErrorBoundary>
   );
 }

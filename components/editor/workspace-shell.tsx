@@ -5,6 +5,7 @@ import { PanelLeftOpen, PanelLeftClose, Share2, BotMessageSquare, LayoutTemplate
 import type { SaveStatus } from "@/hooks/use-canvas-autosave"
 import { UserButton } from "@clerk/nextjs"
 import { cn } from "@/lib/utils"
+import { LiveblocksProvider, RoomProvider } from "@liveblocks/react"
 import { ProjectSidebar } from "./project-sidebar"
 import { ProjectDialogs } from "./project-dialogs"
 import { ShareDialog } from "./share-dialog"
@@ -30,7 +31,8 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
   const actions = useProjectActions()
 
   return (
-    <>
+    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
+      <RoomProvider id={project.id} initialPresence={{ cursor: null, thinking: false }}>
       <header className="fixed top-0 left-0 right-0 z-40 h-12 flex items-center bg-surface border-b border-surface-border">
         <div className="flex items-center gap-2 px-3">
           <button
@@ -106,7 +108,6 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
       <div className="flex h-screen pt-12 overflow-hidden">
         <main className="relative flex-1 overflow-hidden bg-base">
           <CanvasWrapper
-            roomId={project.id}
             projectId={project.id}
             templatesOpen={templatesOpen}
             onTemplatesOpenChange={setTemplatesOpen}
@@ -126,6 +127,7 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
         projectName={project.name}
         isOwner={isOwner}
       />
-    </>
+      </RoomProvider>
+    </LiveblocksProvider>
   )
 }

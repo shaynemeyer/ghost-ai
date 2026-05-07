@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Bot, X, FileText, Download, Send } from "lucide-react"
+import { Bot, X, FileText, Download, Send, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { useOthers, useCreateFeed, useFeedMessages } from "@liveblocks/react"
+import { aiStatusMessageSchema } from "@/types/tasks"
 
 interface Message {
   id: string
@@ -19,6 +21,8 @@ const STARTER_PROMPTS = [
   "Build a CI/CD pipeline",
 ]
 
+const AI_STATUS_FEED = "ai-status-feed"
+
 interface AiSidebarProps {
   isOpen: boolean
   onClose: () => void
@@ -30,6 +34,26 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const others = useOthers()
+  const isGenerating = others.some((o) => o.presence.thinking === true)
+
+  const createFeed = useCreateFeed()
+  const { messages: feedMessages } = useFeedMessages(AI_STATUS_FEED)
+
+  const latestFeedMessage = (() => {
+    if (!feedMessages || feedMessages.length === 0) return null
+    const sorted = [...feedMessages].sort((a, b) => b.createdAt - a.createdAt)
+    const parsed = aiStatusMessageSchema.safeParse(sorted[0].data)
+    return parsed.success ? parsed.data : null
+  })()
+
+  useEffect(() => {
+    createFeed(AI_STATUS_FEED, {}).catch(() => {
+      // Feed already exists — ignore
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -38,7 +62,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
 
   function handleSend() {
     const text = input.trim()
-    if (!text) return
+    if (!text || isGenerating) return
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), role: "user", content: text },
@@ -54,6 +78,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   }
 
   function handleStarterChip(prompt: string) {
+    if (isGenerating) return
     setInput(prompt)
     textareaRef.current?.focus()
   }
@@ -70,12 +95,18 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
       {/* Header */}
       <div className="flex items-start justify-between px-4 py-3 border-b border-surface-border shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-accent-dim">
-            <Bot className="h-4 w-4 text-brand" />
+          <div className={cn("p-1.5 rounded-lg", isGenerating ? "bg-purple-500/20" : "bg-accent-dim")}>
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 text-purple-400 animate-spin" />
+            ) : (
+              <Bot className="h-4 w-4 text-brand" />
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold text-copy-primary leading-tight">AI Workspace</p>
-            <p className="text-xs text-copy-muted leading-tight">Collaborate with Ghost AI</p>
+            <p className="text-xs text-copy-muted leading-tight">
+              {isGenerating ? "Ghost AI is thinking..." : "Collaborate with Ghost AI"}
+            </p>
           </div>
         </div>
         <button
@@ -86,6 +117,13 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
           <X className="h-4 w-4" />
         </button>
       </div>
+
+      {/* AI status feed message */}
+      {latestFeedMessage?.text && (
+        <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300">
+          {latestFeedMessage.text}
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="architect" className="flex flex-col flex-1 min-h-0">
@@ -124,7 +162,8 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
                   <button
                     key={prompt}
                     onClick={() => handleStarterChip(prompt)}
-                    className="text-left px-3 py-2 rounded-full text-xs bg-subtle text-brand border border-surface-border hover:bg-elevated transition-colors"
+                    disabled={isGenerating}
+                    className="text-left px-3 py-2 rounded-full text-xs bg-subtle text-brand border border-surface-border hover:bg-elevated transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {prompt}
                   </button>
@@ -156,24 +195,32 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
 
           {/* Input Area */}
           <div className="shrink-0 px-4 pb-4 pt-3 border-t border-surface-border">
-            <div className="relative flex flex-col gap-2 rounded-xl bg-elevated border border-surface-border p-2">
+            <div className={cn(
+              "relative flex flex-col gap-2 rounded-xl bg-elevated border p-2 transition-colors",
+              isGenerating ? "border-purple-500/30 opacity-60" : "border-surface-border"
+            )}>
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Describe your architecture..."
-                className="min-h-[72px] max-h-[160px] resize-none border-0 bg-transparent p-1 text-xs text-copy-primary placeholder:text-copy-muted focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+                disabled={isGenerating}
+                placeholder={isGenerating ? "AI is generating..." : "Describe your architecture..."}
+                className="min-h-18 max-h-40 resize-none border-0 bg-transparent p-1 text-xs text-copy-primary placeholder:text-copy-muted focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none disabled:cursor-not-allowed"
               />
               <div className="flex justify-end">
                 <Button
                   size="sm"
                   onClick={handleSend}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || isGenerating}
                   className="h-7 w-7 p-0 bg-brand text-base hover:bg-brand/90 disabled:opacity-40"
                   aria-label="Send message"
                 >
-                  <Send className="h-3.5 w-3.5" />
+                  {isGenerating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </div>
             </div>

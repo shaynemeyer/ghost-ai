@@ -24,6 +24,10 @@ declare global {
     };
     ThreadMetadata: {};
     RoomInfo: {};
+
+    FeedMessageData: {
+      text?: string;
+    };
   }
 }
 

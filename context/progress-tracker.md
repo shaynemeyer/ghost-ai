@@ -53,13 +53,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 23: Design agent logic — `trigger/design-agent.ts` fully implemented: reads current canvas state via `mutateFlow` (from `@liveblocks/react-flow/node`), calls Gemini (`gemini-2.0-flash`) via `generateText` + `Output.object` (ai v6 API) with a structured Zod schema for 7 canvas actions (add/move/resize/update/delete node, add/delete edge), applies actions through a second `mutateFlow` call. AI presence set via `liveblocks.setPresence` (thinking=true while running, TTL=5 on complete). Status messages broadcast via `liveblocks.broadcastEvent` at key steps (start, generating, applying, done, error). `liveblocks.config.ts`: `RoomEvent` typed as `{ type: "AI_STATUS"; message: string }`. `components/editor/canvas.tsx`: `useEventListener` subscribes to AI_STATUS events, shows a transient purple pill overlay at top-center (auto-clears after 4s).
 
+- Feature 24: AI presence state — Shared AI activity indicators (UI + presence only, no generation logic). `liveblocks.config.ts`: added `FeedMessageData: { text?: string }` to the global Liveblocks interface. `types/tasks.ts` (new): `aiStatusMessageSchema` (Zod) validates incoming feed message payloads. `LiveblocksProvider` + `RoomProvider` lifted from `canvas-wrapper.tsx` into `workspace-shell.tsx` so the AI sidebar and canvas share one room connection; `canvas-wrapper.tsx` now only wraps `CanvasErrorBoundary` + `ClientSideSuspense` + `ReactFlowProvider`. `components/editor/ai-sidebar.tsx`: subscribes to `ai-status-feed` via `useCreateFeed` (creates on mount, idempotent) + `useFeedMessages`; derives `isGenerating` from `useOthers()` (any participant with `thinking: true`); when generating — header icon swaps to spinning `Loader2` in purple, subtitle reads "Ghost AI is thinking…", textarea disabled with ghost placeholder, send button shows spinner, starter chips disabled; latest validated feed message shown in a purple status pill below the header. `components/editor/canvas.tsx`: `ThinkingCursor` component uses `useOther(connectionId, …)` to read `info.name`, `info.cursorColor`, and `presence.thinking`; renders cursor arrow SVG + color-matched name badge; badge prepends a mini SVG spinner when `thinking` is true; wired into `<Cursors components={{ Cursor: ThinkingCursor }} />`.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 24: TBD
+- Feature 25: TBD
 
 ## Open Questions
 

@@ -12,8 +12,8 @@ import {
   type NodeTypes,
   type EdgeTypes,
 } from "@xyflow/react";
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
-import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory, useUpdateMyPresence, useEventListener } from "@liveblocks/react";
+import { useLiveblocksFlow, Cursors, type CursorsCursorProps } from "@liveblocks/react-flow";
+import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory, useUpdateMyPresence, useEventListener, useOther } from "@liveblocks/react";
 import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
@@ -27,6 +27,46 @@ import { type CanvasTemplate } from "./starter-templates";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useCanvasAutosave, type SaveStatus } from "@/hooks/use-canvas-autosave";
 import { PresenceAvatars } from "./presence-avatars";
+
+function ThinkingCursor({ connectionId }: CursorsCursorProps) {
+  const other = useOther(connectionId, (o) => ({
+    name: o.info.name,
+    color: o.info.cursorColor,
+    thinking: o.presence.thinking,
+  }));
+
+  if (!other) return null;
+
+  return (
+    <div className="pointer-events-none select-none">
+      <svg width="16" height="22" viewBox="0 0 16 22" fill="none">
+        <path
+          d="M0 0L0 16L4.5 12L7.5 19L9.5 18L6.5 11L12 11Z"
+          fill={other.color}
+          stroke="rgba(0,0,0,0.3)"
+          strokeWidth="1"
+        />
+      </svg>
+      <div
+        className="mt-0.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white whitespace-nowrap"
+        style={{ backgroundColor: other.color }}
+      >
+        {other.thinking && (
+          <svg
+            className="h-2.5 w-2.5 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+        )}
+        {other.name}
+      </div>
+    </div>
+  );
+}
 
 function ControlButton({
   onClick,
@@ -213,7 +253,7 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
         fitView
       >
         <Background variant={BackgroundVariant.Dots} />
-        <Cursors />
+        <Cursors components={{ Cursor: ThinkingCursor }} />
         <Panel position="top-right" style={{ marginTop: "16px", marginRight: "16px" }}>
           <PresenceAvatars />
         </Panel>
