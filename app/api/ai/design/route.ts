@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
   if (typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "prompt is required" }, { status: 400 });
   }
+  if (prompt.length > 2000) {
+    return NextResponse.json({ error: "prompt too long" }, { status: 400 });
+  }
   if (typeof roomId !== "string" || !roomId.trim()) {
     return NextResponse.json({ error: "roomId is required" }, { status: 400 });
   }

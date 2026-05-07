@@ -110,12 +110,15 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
   const { screenToFlowPosition } = instance;
   const updateMyPresence = useUpdateMyPresence();
   const [aiStatus, setAiStatus] = useState<string | null>(null);
+  const aiStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEventListener(({ event }) => {
     if (event.type === "AI_STATUS") {
+      if (aiStatusTimerRef.current) clearTimeout(aiStatusTimerRef.current);
       setAiStatus(event.message);
-      setTimeout(() => setAiStatus(null), 4000);
+      aiStatusTimerRef.current = setTimeout(() => setAiStatus(null), 4000);
     }
   });
+  useEffect(() => () => { if (aiStatusTimerRef.current) clearTimeout(aiStatusTimerRef.current); }, []);
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();

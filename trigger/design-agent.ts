@@ -104,7 +104,7 @@ export const designAgentTask = task({
         userId: AI_AGENT_ID,
         data: { cursor: null, thinking },
         userInfo: { name: "Ghost AI", avatar: "", cursorColor: "#A855F7" },
-        ttl: thinking ? 3599 : 5,
+        ttl: thinking ? 120 : 5,
       });
     }
 
