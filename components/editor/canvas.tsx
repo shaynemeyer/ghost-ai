@@ -13,7 +13,7 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow";
-import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory, useUpdateMyPresence } from "@liveblocks/react";
+import { useUndo, useRedo, useCanUndo, useCanRedo, useHistory, useUpdateMyPresence, useEventListener } from "@liveblocks/react";
 import "@xyflow/react/dist/style.css";
 import "@liveblocks/react-ui/styles.css";
 import "@liveblocks/react-flow/styles.css";
@@ -69,6 +69,13 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
   const instance = useReactFlow();
   const { screenToFlowPosition } = instance;
   const updateMyPresence = useUpdateMyPresence();
+  const [aiStatus, setAiStatus] = useState<string | null>(null);
+  useEventListener(({ event }) => {
+    if (event.type === "AI_STATUS") {
+      setAiStatus(event.message);
+      setTimeout(() => setAiStatus(null), 4000);
+    }
+  });
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
@@ -233,6 +240,13 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
         <Panel position="bottom-center" className="mb-4">
           <ShapePanel />
         </Panel>
+        {aiStatus && (
+          <Panel position="top-center" style={{ marginTop: "16px" }}>
+            <div className="rounded-full border border-purple-500/30 bg-zinc-900/90 px-4 py-1.5 text-xs text-purple-300 shadow-lg backdrop-blur-sm">
+              {aiStatus}
+            </div>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );

@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 21: Canvas autosave (complete)
+- Feature 23: Design agent logic (complete)
 
 ## Completed
 
@@ -49,13 +49,17 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 21: Canvas autosave — `@vercel/blob` installed. `prisma/models/project.prisma`: `canvasJsonPath` renamed to `canvasBlobUrl`. Migration applied. `app/api/projects/[projectId]/canvas/route.ts`: GET reads blob URL from Prisma and fetches JSON from Vercel Blob; PUT uploads canvas JSON to Vercel Blob and stores returned URL on Prisma project. `hooks/use-canvas-autosave.ts`: watches nodes/edges, debounces 2 s, PUTs to canvas API, tracks `SaveStatus` (idle/saving/saved/error). `components/editor/canvas.tsx`: on mount loads saved canvas JSON if room is empty (skips if nodes/edges already present), wires autosave hook and reports status via `onSaveStatusChange` callback. `components/editor/canvas-wrapper.tsx`: passes `projectId` and `onSaveStatusChange` through to `Canvas`. `components/editor/workspace-shell.tsx`: `saveStatus` state, small status chip (Loader2/Cloud/CloudOff icon + label) shown in navbar when saving/saved/error.
 
+- Feature 22: Design agent API — `prisma/models/task-run.prisma`: `TaskRun` model with `runId` (unique), `projectId`, `userId`, `createdAt`; index on `runId`, compound index on `userId`/`projectId`. Migration applied (`20260507132727_add_task_run`). `trigger/design-agent.ts`: minimal `designAgentTask` that logs `prompt` and `roomId`, returns them. `app/api/ai/design/route.ts`: POST accepts `prompt`, `roomId`, `projectId`; verifies project membership; triggers `design-agent` task; creates `TaskRun` record; returns `runId`. `app/api/ai/design/token/route.ts`: POST accepts `runId`; verifies ownership via `TaskRun`; issues a Trigger.dev public token scoped to that run with 1h expiry; returns `token`.
+
+- Feature 23: Design agent logic — `trigger/design-agent.ts` fully implemented: reads current canvas state via `mutateFlow` (from `@liveblocks/react-flow/node`), calls Gemini (`gemini-2.0-flash`) via `generateText` + `Output.object` (ai v6 API) with a structured Zod schema for 7 canvas actions (add/move/resize/update/delete node, add/delete edge), applies actions through a second `mutateFlow` call. AI presence set via `liveblocks.setPresence` (thinking=true while running, TTL=5 on complete). Status messages broadcast via `liveblocks.broadcastEvent` at key steps (start, generating, applying, done, error). `liveblocks.config.ts`: `RoomEvent` typed as `{ type: "AI_STATUS"; message: string }`. `components/editor/canvas.tsx`: `useEventListener` subscribes to AI_STATUS events, shows a transient purple pill overlay at top-center (auto-clears after 4s).
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 22: TBD
+- Feature 24: TBD
 
 ## Open Questions
 

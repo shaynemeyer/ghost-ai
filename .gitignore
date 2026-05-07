@@ -47,3 +47,6 @@ next-env.d.ts
 /code-reviews
 
 settings.local.json
+.trigger
+
+.vscode

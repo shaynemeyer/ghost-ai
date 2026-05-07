@@ -18,7 +18,10 @@ declare global {
       };
     };
 
-    RoomEvent: {};
+    RoomEvent: {
+      type: "AI_STATUS";
+      message: string;
+    };
     ThreadMetadata: {};
     RoomInfo: {};
   }
