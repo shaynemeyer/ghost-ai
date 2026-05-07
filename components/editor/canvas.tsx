@@ -134,12 +134,13 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
 
   // Load saved canvas when room is empty on first mount.
   const loadedRef = useRef(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  // With suspense:true, useLiveblocksFlow resolves before Canvas renders, so nodes/edges
+  // are already populated if the room has data — initialize isLoaded without a setState call.
+  const [isLoaded, setIsLoaded] = useState(() => nodes.length > 0 || edges.length > 0);
   useEffect(() => {
     if (loadedRef.current) return;
     if (nodes.length > 0 || edges.length > 0) {
       loadedRef.current = true;
-      setIsLoaded(true);
       return;
     }
     loadedRef.current = true;
@@ -196,11 +197,13 @@ export function Canvas({ projectId, templatesOpen, onTemplatesOpenChange, onSave
       const raw = e.dataTransfer.getData("application/canvas-shape");
       if (!raw) return;
 
-      const { shape, width, height } = JSON.parse(raw) as {
-        shape: NodeShape;
-        width: number;
-        height: number;
-      };
+      let parsed: { shape: NodeShape; width: number; height: number };
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return;
+      }
+      const { shape, width, height } = parsed;
 
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
       const newNode: CanvasNode = {
