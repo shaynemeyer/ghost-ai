@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { useOthers, useCreateFeed, useFeedMessages, useCreateFeedMessage, useSelf } from "@liveblocks/react"
+import { useRealtimeRun } from "@trigger.dev/react-hooks"
 import { aiStatusMessageSchema, chatMessageSchema, type ChatMessageData } from "@/types/tasks"
 
 interface Message {
@@ -27,13 +28,17 @@ const AI_CHAT_FEED = "ai-chat"
 interface AiSidebarProps {
   isOpen: boolean
   onClose: () => void
+  roomId: string
+  projectId: string
 }
 
-export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
+export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [chatInput, setChatInput] = useState("")
   const [chatSendError, setChatSendError] = useState(false)
+  const [activeRunId, setActiveRunId] = useState<string | null>(null)
+  const [publicToken, setPublicToken] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -47,6 +52,31 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   const createFeedMessage = useCreateFeedMessage()
   const { messages: feedMessages } = useFeedMessages(AI_STATUS_FEED)
   const { messages: chatFeedMessages } = useFeedMessages(AI_CHAT_FEED)
+
+  const { run: activeRun } = useRealtimeRun(activeRunId ?? undefined, {
+    accessToken: publicToken ?? undefined,
+    enabled: !!activeRunId && !!publicToken,
+    onComplete: async (run) => {
+      const summary = run.status === "COMPLETED"
+        ? "Design complete. Check the canvas for updates."
+        : "Generation ended."
+      await createFeedMessage(AI_CHAT_FEED, {
+        sender: "Ghost AI",
+        role: "user",
+        content: summary,
+        timestamp: Date.now(),
+      }).catch(() => {})
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: summary },
+      ])
+      setActiveRunId(null)
+      setPublicToken(null)
+    },
+  })
+
+  const isRunActive = !!activeRunId && !!activeRun &&
+    !["COMPLETED", "FAILED", "CANCELED", "CRASHED", "TIMED_OUT", "INTERRUPTED", "SYSTEM_FAILURE"].includes(activeRun.status)
 
   const latestFeedMessage = (() => {
     if (!feedMessages || feedMessages.length === 0) return null
@@ -84,14 +114,54 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
     }
   }, [validatedChatMessages.length])
 
-  function handleSend() {
+  async function handleSend() {
     const text = input.trim()
-    if (!text || isGenerating) return
+    if (!text || isGenerating || isRunActive) return
     setMessages((prev) => [
       ...prev,
       { id: crypto.randomUUID(), role: "user", content: text },
     ])
     setInput("")
+
+    await createFeedMessage(AI_CHAT_FEED, {
+      sender: me?.info.name ?? "You",
+      role: "user",
+      content: text,
+      timestamp: Date.now(),
+    }).catch(() => {})
+
+    try {
+      const designRes = await fetch("/api/ai/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text, roomId, projectId }),
+      })
+      if (!designRes.ok) throw new Error("Failed to start generation")
+      const { runId } = await designRes.json()
+
+      const tokenRes = await fetch("/api/ai/design/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId }),
+      })
+      if (!tokenRes.ok) throw new Error("Failed to get token")
+      const { token } = await tokenRes.json()
+
+      setActiveRunId(runId)
+      setPublicToken(token)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to start generation"
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: msg },
+      ])
+      await createFeedMessage(AI_CHAT_FEED, {
+        sender: "Ghost AI",
+        role: "user",
+        content: msg,
+        timestamp: Date.now(),
+      }).catch(() => {})
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -126,7 +196,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   }
 
   function handleStarterChip(prompt: string) {
-    if (isGenerating) return
+    if (isGenerating || isRunActive) return
     setInput(prompt)
     textareaRef.current?.focus()
   }
@@ -165,13 +235,6 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
           <X className="h-4 w-4" />
         </button>
       </div>
-
-      {/* AI status feed message */}
-      {latestFeedMessage?.text && (
-        <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300">
-          {latestFeedMessage.text}
-        </div>
-      )}
 
       {/* Tabs */}
       <Tabs defaultValue="architect" className="flex flex-col flex-1 min-h-0">
@@ -216,7 +279,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
                   <button
                     key={prompt}
                     onClick={() => handleStarterChip(prompt)}
-                    disabled={isGenerating}
+                    disabled={isGenerating || isRunActive}
                     className="text-left px-3 py-2 rounded-full text-xs bg-subtle text-brand border border-surface-border hover:bg-elevated transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {prompt}
@@ -232,13 +295,13 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
               {messages.map((msg) =>
                 msg.role === "user" ? (
                   <div key={msg.id} className="flex justify-end">
-                    <div className="max-w-[85%] px-3 py-2 rounded-xl text-xs bg-accent-dim border-2 border-brand/50 text-copy-primary">
+                    <div className="max-w-[85%] px-3 py-2 rounded-xl text-xs bg-brand text-zinc-900 font-medium">
                       {msg.content}
                     </div>
                   </div>
                 ) : (
                   <div key={msg.id} className="flex justify-start">
-                    <div className="max-w-[85%] px-3 py-2 rounded-xl text-xs bg-elevated border border-surface-border text-brand">
+                    <div className="max-w-[85%] px-3 py-2 rounded-xl text-xs bg-elevated border border-surface-border text-copy-primary">
                       {msg.content}
                     </div>
                   </div>
@@ -247,30 +310,38 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
             </div>
           )}
 
+          {/* Status strip — only shown during active run */}
+          {isRunActive && latestFeedMessage?.text && (
+            <div className="mx-4 mb-0 px-3 py-1.5 rounded-lg bg-base border border-brand/30 flex items-center gap-2 text-[11px] text-brand">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse shrink-0" />
+              {latestFeedMessage.text}
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="shrink-0 px-4 pb-4 pt-3 border-t border-surface-border">
             <div className={cn(
               "relative flex flex-col gap-2 rounded-xl bg-elevated border p-2 transition-colors",
-              isGenerating ? "border-purple-500/30 opacity-60" : "border-surface-border"
+              (isGenerating || isRunActive) ? "border-brand/30 opacity-60" : "border-surface-border"
             )}>
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={isGenerating}
-                placeholder={isGenerating ? "AI is generating..." : "Describe your architecture..."}
+                disabled={isGenerating || isRunActive}
+                placeholder={(isGenerating || isRunActive) ? "AI is generating..." : "Describe your architecture..."}
                 className="min-h-18 max-h-40 resize-none border-0 bg-transparent p-1 text-xs text-copy-primary placeholder:text-copy-muted focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none disabled:cursor-not-allowed"
               />
               <div className="flex justify-end">
                 <Button
                   size="sm"
                   onClick={handleSend}
-                  disabled={!input.trim() || isGenerating}
+                  disabled={!input.trim() || isGenerating || isRunActive}
                   className="h-7 w-7 p-0 bg-brand text-base hover:bg-brand/90 disabled:opacity-40"
                   aria-label="Send message"
                 >
-                  {isGenerating ? (
+                  {(isGenerating || isRunActive) ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Send className="h-3.5 w-3.5" />

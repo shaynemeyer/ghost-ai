@@ -57,13 +57,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 25: Sidebar chat feed — Real-time room chat via a separate Liveblocks `ai-chat` feed. `liveblocks.config.ts`: extended `FeedMessageData` with `sender?: string`, `role?: "user"`, `content?: string` for chat messages. `types/tasks.ts`: added `chatMessageSchema` (Zod) with `sender`, `role`, `content`, `timestamp` fields and `ChatMessageData` type. `components/editor/ai-sidebar.tsx`: creates `ai-chat` feed on mount alongside `ai-status-feed`; subscribes via `useFeedMessages`; validates messages with `chatMessageSchema` before rendering; new "Chat" tab between "AI Architect" and "Specs" shows messages with sender name + time, empty state prompt, and an input + send button using `useCreateFeedMessage`; shows a small error state if sending fails; `ai-chat` and `ai-status-feed` remain fully separate.
 
+- Feature 26: Design agent frontend — `components/editor/ai-sidebar.tsx`: added `roomId` and `projectId` props; `handleSend` now pushes user message to `ai-chat` feed, POSTs to `/api/ai/design` (returns `runId`), then POSTs to `/api/ai/design/token` (returns `token`), stores both in local state; `useRealtimeRun` (from `@trigger.dev/react-hooks`) subscribes with `enabled: !!activeRunId && !!publicToken`, auto-clears run state on completion and pushes final AI message to `ai-chat`; `isRunActive` derived from run status to gate input/button disabled states; status strip rendered above input only when run is active, showing latest `ai-status-feed` message with animated pulse; chat bubble styles updated (user: `bg-brand text-zinc-900`; AI: `bg-elevated text-copy-primary`); send button shows spinner during active run; errors pushed as assistant messages in both local state and `ai-chat` feed. `components/editor/workspace-shell.tsx`: passes `roomId={project.id}` and `projectId={project.id}` to `AiSidebar`.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 26: TBD
+- Feature 27: TBD
 
 ## Open Questions
 

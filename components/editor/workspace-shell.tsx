@@ -116,7 +116,12 @@ export function WorkspaceShell({ project, isOwner, ownedProjects, sharedProjects
         </main>
       </div>
 
-      <AiSidebar isOpen={aiSidebarOpen} onClose={() => setAiSidebarOpen(false)} />
+      <AiSidebar
+        isOpen={aiSidebarOpen}
+        onClose={() => setAiSidebarOpen(false)}
+        roomId={project.id}
+        projectId={project.id}
+      />
 
       <ProjectDialogs actions={actions} />
 
