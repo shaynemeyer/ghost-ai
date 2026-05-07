@@ -55,13 +55,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 24: AI presence state — Shared AI activity indicators (UI + presence only, no generation logic). `liveblocks.config.ts`: added `FeedMessageData: { text?: string }` to the global Liveblocks interface. `types/tasks.ts` (new): `aiStatusMessageSchema` (Zod) validates incoming feed message payloads. `LiveblocksProvider` + `RoomProvider` lifted from `canvas-wrapper.tsx` into `workspace-shell.tsx` so the AI sidebar and canvas share one room connection; `canvas-wrapper.tsx` now only wraps `CanvasErrorBoundary` + `ClientSideSuspense` + `ReactFlowProvider`. `components/editor/ai-sidebar.tsx`: subscribes to `ai-status-feed` via `useCreateFeed` (creates on mount, idempotent) + `useFeedMessages`; derives `isGenerating` from `useOthers()` (any participant with `thinking: true`); when generating — header icon swaps to spinning `Loader2` in purple, subtitle reads "Ghost AI is thinking…", textarea disabled with ghost placeholder, send button shows spinner, starter chips disabled; latest validated feed message shown in a purple status pill below the header. `components/editor/canvas.tsx`: `ThinkingCursor` component uses `useOther(connectionId, …)` to read `info.name`, `info.cursorColor`, and `presence.thinking`; renders cursor arrow SVG + color-matched name badge; badge prepends a mini SVG spinner when `thinking` is true; wired into `<Cursors components={{ Cursor: ThinkingCursor }} />`.
 
+- Feature 25: Sidebar chat feed — Real-time room chat via a separate Liveblocks `ai-chat` feed. `liveblocks.config.ts`: extended `FeedMessageData` with `sender?: string`, `role?: "user"`, `content?: string` for chat messages. `types/tasks.ts`: added `chatMessageSchema` (Zod) with `sender`, `role`, `content`, `timestamp` fields and `ChatMessageData` type. `components/editor/ai-sidebar.tsx`: creates `ai-chat` feed on mount alongside `ai-status-feed`; subscribes via `useFeedMessages`; validates messages with `chatMessageSchema` before rendering; new "Chat" tab between "AI Architect" and "Specs" shows messages with sender name + time, empty state prompt, and an input + send button using `useCreateFeedMessage`; shows a small error state if sending fails; `ai-chat` and `ai-status-feed` remain fully separate.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 25: TBD
+- Feature 26: TBD
 
 ## Open Questions
 

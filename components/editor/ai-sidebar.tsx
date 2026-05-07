@@ -1,13 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Bot, X, FileText, Download, Send, Loader2 } from "lucide-react"
+import { Bot, X, FileText, Download, Send, Loader2, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { useOthers, useCreateFeed, useFeedMessages } from "@liveblocks/react"
-import { aiStatusMessageSchema } from "@/types/tasks"
+import { useOthers, useCreateFeed, useFeedMessages, useCreateFeedMessage, useSelf } from "@liveblocks/react"
+import { aiStatusMessageSchema, chatMessageSchema, type ChatMessageData } from "@/types/tasks"
 
 interface Message {
   id: string
@@ -22,6 +22,7 @@ const STARTER_PROMPTS = [
 ]
 
 const AI_STATUS_FEED = "ai-status-feed"
+const AI_CHAT_FEED = "ai-chat"
 
 interface AiSidebarProps {
   isOpen: boolean
@@ -31,14 +32,21 @@ interface AiSidebarProps {
 export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
+  const [chatInput, setChatInput] = useState("")
+  const [chatSendError, setChatSendError] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
 
+  const me = useSelf()
   const others = useOthers()
   const isGenerating = others.some((o) => o.presence.thinking === true)
 
   const createFeed = useCreateFeed()
+  const createFeedMessage = useCreateFeedMessage()
   const { messages: feedMessages } = useFeedMessages(AI_STATUS_FEED)
+  const { messages: chatFeedMessages } = useFeedMessages(AI_CHAT_FEED)
 
   const latestFeedMessage = (() => {
     if (!feedMessages || feedMessages.length === 0) return null
@@ -47,10 +55,20 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
     return parsed.success ? parsed.data : null
   })()
 
+  const validatedChatMessages: (ChatMessageData & { id: string })[] = (() => {
+    if (!chatFeedMessages) return []
+    return chatFeedMessages
+      .map((msg) => {
+        const parsed = chatMessageSchema.safeParse(msg.data)
+        if (!parsed.success) return null
+        return { ...parsed.data, id: msg.id }
+      })
+      .filter((m): m is ChatMessageData & { id: string } => m !== null)
+  })()
+
   useEffect(() => {
-    createFeed(AI_STATUS_FEED, {}).catch(() => {
-      // Feed already exists — ignore
-    })
+    createFeed(AI_STATUS_FEED, {}).catch(() => {})
+    createFeed(AI_CHAT_FEED, {}).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -59,6 +77,12 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    }
+  }, [validatedChatMessages.length])
 
   function handleSend() {
     const text = input.trim()
@@ -74,6 +98,30 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  async function handleChatSend() {
+    const text = chatInput.trim()
+    if (!text || !me) return
+    setChatSendError(false)
+    setChatInput("")
+    try {
+      await createFeedMessage(AI_CHAT_FEED, {
+        sender: me.info.name,
+        role: "user",
+        content: text,
+        timestamp: Date.now(),
+      })
+    } catch {
+      setChatSendError(true)
+    }
+  }
+
+  function handleChatKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleChatSend()
     }
   }
 
@@ -135,6 +183,12 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
             className="flex-1 text-xs data-active:bg-accent-dim data-active:text-brand text-copy-muted"
           >
             AI Architect
+          </TabsTrigger>
+          <TabsTrigger
+            value="chat"
+            className="flex-1 text-xs data-active:bg-accent-dim data-active:text-brand text-copy-muted"
+          >
+            Chat
           </TabsTrigger>
           <TabsTrigger
             value="specs"
@@ -221,6 +275,68 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}
+                </Button>
+              </div>
+            </div>
+            <p className="mt-1.5 text-center text-[10px] text-copy-faint">
+              Enter to send · Shift+Enter for newline
+            </p>
+          </div>
+        </TabsContent>
+
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="flex flex-col flex-1 min-h-0 mt-0">
+          {validatedChatMessages.length === 0 ? (
+            <div className="flex flex-col flex-1 items-center justify-center px-4 gap-2">
+              <MessageSquare className="h-6 w-6 text-copy-faint" />
+              <p className="text-xs text-copy-muted text-center">
+                No messages yet. Say hello to your collaborators.
+              </p>
+            </div>
+          ) : (
+            <div
+              ref={chatScrollRef}
+              className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0"
+            >
+              {validatedChatMessages.map((msg) => (
+                <div key={msg.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-medium text-copy-primary">{msg.sender}</span>
+                    <span className="text-[9px] text-copy-faint">
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl text-xs bg-elevated border border-surface-border text-copy-primary">
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Chat Input */}
+          <div className="shrink-0 px-4 pb-4 pt-3 border-t border-surface-border">
+            {chatSendError && (
+              <p className="mb-2 text-[10px] text-red-400">Failed to send. Please try again.</p>
+            )}
+            <div className="relative flex flex-col gap-2 rounded-xl bg-elevated border border-surface-border p-2">
+              <Textarea
+                ref={chatTextareaRef}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleChatKeyDown}
+                placeholder="Message the room..."
+                className="min-h-18 max-h-40 resize-none border-0 bg-transparent p-1 text-xs text-copy-primary placeholder:text-copy-muted focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleChatSend}
+                  disabled={!chatInput.trim()}
+                  className="h-7 w-7 p-0 bg-brand text-base hover:bg-brand/90 disabled:opacity-40"
+                  aria-label="Send message"
+                >
+                  <Send className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

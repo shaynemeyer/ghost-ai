@@ -27,6 +27,9 @@ declare global {
 
     FeedMessageData: {
       text?: string;
+      sender?: string;
+      role?: "user";
+      content?: string;
     };
   }
 }
