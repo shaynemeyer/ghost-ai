@@ -1,14 +1,27 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Bot, X, FileText, Download, Send, Loader2, MessageSquare } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { useOthers, useCreateFeed, useFeedMessages, useCreateFeedMessage, useSelf } from "@liveblocks/react"
 import { useRealtimeRun } from "@trigger.dev/react-hooks"
 import { aiStatusMessageSchema, chatMessageSchema, type ChatMessageData } from "@/types/tasks"
+
+interface ProjectSpec {
+  id: string
+  createdAt: string
+}
 
 interface Message {
   id: string
@@ -39,6 +52,12 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
   const [chatSendError, setChatSendError] = useState(false)
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [publicToken, setPublicToken] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("architect")
+  const [specs, setSpecs] = useState<ProjectSpec[]>([])
+  const [specsLoading, setSpecsLoading] = useState(false)
+  const [previewSpec, setPreviewSpec] = useState<ProjectSpec | null>(null)
+  const [previewContent, setPreviewContent] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -101,6 +120,46 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
     createFeed(AI_CHAT_FEED, {}).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const fetchSpecs = useCallback(async () => {
+    setSpecsLoading(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/specs`)
+      if (!res.ok) return
+      const data = await res.json()
+      setSpecs(data.specs ?? [])
+    } finally {
+      setSpecsLoading(false)
+    }
+  }, [projectId])
+
+  useEffect(() => {
+    if (activeTab === "specs") {
+      fetchSpecs()
+    }
+  }, [activeTab, fetchSpecs])
+
+  async function openPreview(spec: ProjectSpec) {
+    setPreviewSpec(spec)
+    setPreviewContent(null)
+    setPreviewLoading(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/specs/${spec.id}/download`)
+      if (!res.ok) throw new Error()
+      setPreviewContent(await res.text())
+    } catch {
+      setPreviewContent(null)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  function downloadSpec(spec: ProjectSpec) {
+    const a = document.createElement("a")
+    a.href = `/api/projects/${projectId}/specs/${spec.id}/download`
+    a.download = `spec-${spec.id}.md`
+    a.click()
+  }
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -237,7 +296,7 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="architect" className="flex flex-col flex-1 min-h-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
         <TabsList
           className="shrink-0 mx-4 mt-3 mb-0 w-auto bg-elevated rounded-lg"
         >
@@ -418,33 +477,88 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
         </TabsContent>
 
         {/* Specs Tab */}
-        <TabsContent value="specs" className="flex flex-col flex-1 min-h-0 mt-0 px-4 py-3">
-          <div className="flex justify-end mb-3">
-            <Button size="sm" className="bg-brand text-base hover:bg-brand/90 text-xs h-8">
-              Generate Spec
-            </Button>
-          </div>
-
-          {/* Demo spec card */}
-          <div className="rounded-xl bg-elevated border border-surface-border p-3 flex gap-3">
-            <div className="shrink-0 p-2 rounded-lg bg-subtle">
-              <FileText className="h-4 w-4 text-brand" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-copy-primary truncate">Microservices Architecture</p>
-              <p className="text-[11px] text-copy-muted mt-0.5 line-clamp-2">
-                API Gateway → Auth, Product, Order, Payment services with event bus and shared database.
-              </p>
-              <button
-                disabled
-                className="mt-2 flex items-center gap-1 text-[10px] text-copy-faint cursor-not-allowed opacity-50"
-              >
-                <Download className="h-3 w-3" />
-                Download
-              </button>
-            </div>
+        <TabsContent value="specs" className="flex flex-col flex-1 min-h-0 mt-0">
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 min-h-0">
+            {specsLoading ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader2 className="h-4 w-4 text-copy-faint animate-spin" />
+              </div>
+            ) : specs.length === 0 ? (
+              <div className="flex flex-col flex-1 items-center justify-center gap-2">
+                <FileText className="h-6 w-6 text-copy-faint" />
+                <p className="text-xs text-copy-muted text-center">
+                  No specs yet. Generate a spec from the AI Architect tab.
+                </p>
+              </div>
+            ) : (
+              specs.map((spec) => (
+                <button
+                  key={spec.id}
+                  onClick={() => openPreview(spec)}
+                  className="w-full text-left rounded-xl bg-elevated border border-surface-border p-3 flex gap-3 hover:border-brand/40 transition-colors"
+                >
+                  <div className="shrink-0 p-2 rounded-lg bg-subtle">
+                    <FileText className="h-4 w-4 text-brand" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-copy-primary truncate">
+                      spec-{spec.id}.md
+                    </p>
+                    <p className="text-[10px] text-copy-muted mt-0.5">
+                      {new Date(spec.createdAt).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); downloadSpec(spec) }}
+                    className="shrink-0 p-1.5 rounded-lg text-copy-faint hover:text-copy-primary hover:bg-subtle transition-colors"
+                    aria-label="Download spec"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                </button>
+              ))
+            )}
           </div>
         </TabsContent>
+
+        {/* Spec Preview Modal */}
+        <Dialog open={!!previewSpec} onOpenChange={(open) => { if (!open) setPreviewSpec(null) }}>
+          <DialogContent className="max-w-2xl bg-elevated border-surface-border text-copy-primary">
+            <DialogHeader>
+              <DialogTitle className="text-copy-primary text-sm font-semibold">
+                {previewSpec ? `spec-${previewSpec.id}.md` : ""}
+              </DialogTitle>
+            </DialogHeader>
+            {previewLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 text-copy-faint animate-spin" />
+              </div>
+            ) : previewContent === null ? (
+              <p className="text-xs text-copy-muted py-8 text-center">Failed to load content.</p>
+            ) : (
+              <ScrollArea className="max-h-[60vh] pr-2">
+                <div className="prose prose-invert prose-sm max-w-none text-copy-primary">
+                  <ReactMarkdown>{previewContent}</ReactMarkdown>
+                </div>
+              </ScrollArea>
+            )}
+            <div className="flex justify-end pt-2 border-t border-surface-border">
+              <Button
+                size="sm"
+                onClick={() => previewSpec && downloadSpec(previewSpec)}
+                className="bg-brand text-base hover:bg-brand/90 text-xs h-8 flex items-center gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </Tabs>
     </aside>
   )

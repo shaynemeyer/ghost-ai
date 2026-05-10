@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Feature 23: Design agent logic (complete)
+- Feature 29: Spec UI integration (complete)
 
 ## Completed
 
@@ -59,13 +59,19 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Feature 26: Design agent frontend — `components/editor/ai-sidebar.tsx`: added `roomId` and `projectId` props; `handleSend` now pushes user message to `ai-chat` feed, POSTs to `/api/ai/design` (returns `runId`), then POSTs to `/api/ai/design/token` (returns `token`), stores both in local state; `useRealtimeRun` (from `@trigger.dev/react-hooks`) subscribes with `enabled: !!activeRunId && !!publicToken`, auto-clears run state on completion and pushes final AI message to `ai-chat`; `isRunActive` derived from run status to gate input/button disabled states; status strip rendered above input only when run is active, showing latest `ai-status-feed` message with animated pulse; chat bubble styles updated (user: `bg-brand text-zinc-900`; AI: `bg-elevated text-copy-primary`); send button shows spinner during active run; errors pushed as assistant messages in both local state and `ai-chat` feed. `components/editor/workspace-shell.tsx`: passes `roomId={project.id}` and `projectId={project.id}` to `AiSidebar`.
 
+- Feature 27: Spec generation backend — `trigger/generate-spec.ts`: `generateSpecTask` (schemaTask) accepts `projectId`, `roomId`, `chatHistory`, `nodes`, `edges`; validates input with Zod; calls Gemini (`gemini-2.0-flash`) via `generateText`; updates run metadata status at key steps; returns `{ spec }` as plain Markdown string. `app/api/ai/spec/route.ts`: POST accepts `roomId`, `chatHistory`, `nodes`, `edges`; resolves project via `getProjectWithAccess(roomId, …)` — does not trust client-supplied projectId; triggers `generate-spec` task; creates `TaskRun` record; returns `runId`. `app/api/ai/spec/token/route.ts`: POST accepts `runId`; verifies `TaskRun` ownership; issues Trigger.dev public token scoped to that run with 1h expiry.
+
+- Feature 28: Spec persistence and download — `prisma/models/spec.prisma`: `ProjectSpec` model with `id`, `projectId` (relation to `Project` with cascade delete), `filePath` (Vercel Blob URL), `createdAt`; index on `projectId`. Migration applied (`20260510182719_add_project_spec`). `trigger/generate-spec.ts`: after generating Markdown, creates a `ProjectSpec` record (empty `filePath`), uploads content to Vercel Blob at `specs/{projectId}/{specId}.md` (private, no overwrite), then updates the record with the blob URL; returns `{ spec, specId }`. `app/api/projects/[projectId]/specs/[specId]/download/route.ts`: GET route — authenticates user, validates cuid format for both IDs, verifies project access via `getProjectWithAccess`, verifies `ProjectSpec` belongs to the project, fetches content from Vercel Blob, returns response as `text/markdown` attachment with `Content-Disposition: attachment; filename="spec-{specId}.md"`.
+
+- Feature 29: Spec UI integration — `app/api/projects/[projectId]/specs/route.ts`: GET lists all `ProjectSpec` records for the project (id, createdAt), ordered newest first, guarded by `getProjectWithAccess`. `react-markdown@10.1.0` installed (exact pin). `components/editor/ai-sidebar.tsx`: Specs tab fetches list on tab activation via `activeTab` state + `useEffect`; displays scrollable list of spec cards (filename `spec-{id}.md`, formatted createdAt) with per-item download button; clicking a card opens a Dialog modal that fetches content from the download endpoint via `fetch()` and renders it as Markdown using `ReactMarkdown`; modal includes a Download button; download uses a programmatic anchor click against the download endpoint; no direct Blob URL access from client.
+
 ## In Progress
 
 - None.
 
 ## Next Up
 
-- Feature 27: TBD
+- TBD
 
 ## Open Questions
 
