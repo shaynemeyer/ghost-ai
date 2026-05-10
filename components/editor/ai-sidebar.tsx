@@ -58,6 +58,9 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
   const [previewSpec, setPreviewSpec] = useState<ProjectSpec | null>(null)
   const [previewContent, setPreviewContent] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [specRunId, setSpecRunId] = useState<string | null>(null)
+  const [specToken, setSpecToken] = useState<string | null>(null)
+  const [isGeneratingSpec, setIsGeneratingSpec] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const chatTextareaRef = useRef<HTMLTextAreaElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -132,6 +135,19 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
       setSpecsLoading(false)
     }
   }, [projectId])
+
+  const { run: specRun } = useRealtimeRun(specRunId ?? undefined, {
+    accessToken: specToken ?? undefined,
+    enabled: !!specRunId && !!specToken,
+    onComplete: async () => {
+      setSpecRunId(null)
+      setSpecToken(null)
+      await fetchSpecs()
+    },
+  })
+
+  const isSpecRunActive = !!specRunId && !!specRun &&
+    !["COMPLETED", "FAILED", "CANCELED", "CRASHED", "TIMED_OUT", "INTERRUPTED", "SYSTEM_FAILURE"].includes(specRun.status)
 
   useEffect(() => {
     if (activeTab === "specs") {
@@ -258,6 +274,38 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
     if (isGenerating || isRunActive) return
     setInput(prompt)
     textareaRef.current?.focus()
+  }
+
+  async function handleGenerateSpec() {
+    if (isGeneratingSpec || isSpecRunActive || isGenerating || isRunActive) return
+    setIsGeneratingSpec(true)
+    try {
+      const res = await fetch("/api/ai/spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId,
+          chatHistory: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to start spec generation")
+      const { runId } = await res.json()
+
+      const tokenRes = await fetch("/api/ai/spec/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId }),
+      })
+      if (!tokenRes.ok) throw new Error("Failed to get token")
+      const { token } = await tokenRes.json()
+
+      setSpecRunId(runId)
+      setSpecToken(token)
+    } catch {
+      // spec generation silently fails — no canvas state to corrupt
+    } finally {
+      setIsGeneratingSpec(false)
+    }
   }
 
   return (
@@ -392,7 +440,19 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
                 placeholder={(isGenerating || isRunActive) ? "AI is generating..." : "Describe your architecture..."}
                 className="min-h-18 max-h-40 resize-none border-0 bg-transparent p-1 text-xs text-copy-primary placeholder:text-copy-muted focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none disabled:cursor-not-allowed"
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={handleGenerateSpec}
+                  disabled={messages.length === 0 || isGeneratingSpec || isSpecRunActive || isGenerating || isRunActive}
+                  className="flex items-center gap-1 text-[10px] text-copy-faint hover:text-copy-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {(isGeneratingSpec || isSpecRunActive) ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <FileText className="h-3 w-3" />
+                  )}
+                  Generate Spec
+                </button>
                 <Button
                   size="sm"
                   onClick={handleSend}
@@ -492,10 +552,13 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
               </div>
             ) : (
               specs.map((spec) => (
-                <button
+                <div
                   key={spec.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openPreview(spec)}
-                  className="w-full text-left rounded-xl bg-elevated border border-surface-border p-3 flex gap-3 hover:border-brand/40 transition-colors"
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openPreview(spec) }}
+                  className="w-full text-left rounded-xl bg-elevated border border-surface-border p-3 flex gap-3 hover:border-brand/40 transition-colors cursor-pointer"
                 >
                   <div className="shrink-0 p-2 rounded-lg bg-subtle">
                     <FileText className="h-4 w-4 text-brand" />
@@ -520,7 +583,7 @@ export function AiSidebar({ isOpen, onClose, roomId, projectId }: AiSidebarProps
                   >
                     <Download className="h-3.5 w-3.5" />
                   </button>
-                </button>
+                </div>
               ))
             )}
           </div>

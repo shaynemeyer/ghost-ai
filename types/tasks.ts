@@ -6,6 +6,13 @@ export const aiStatusMessageSchema = z.object({
 
 export type AiStatusMessageData = z.infer<typeof aiStatusMessageSchema>
 
+export const designMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string(),
+})
+
+export type DesignMessageData = z.infer<typeof designMessageSchema>
+
 export const chatMessageSchema = z.object({
   sender: z.string(),
   role: z.literal("user"),

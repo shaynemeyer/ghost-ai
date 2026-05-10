@@ -1,45 +1,18 @@
-import { logger, metadata } from "@trigger.dev/sdk/v3";
-import { schemaTask } from "@trigger.dev/sdk/v3";
+import { logger, metadata, schemaTask } from "@trigger.dev/sdk/v3";
+import { Liveblocks } from "@liveblocks/node";
+import { mutateFlow } from "@liveblocks/react-flow/node";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-
-const chatMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
-});
-
-const nodeSchema = z.object({
-  id: z.string(),
-  data: z
-    .object({
-      label: z.string().optional(),
-      shape: z.string().optional(),
-    })
-    .optional(),
-  position: z
-    .object({
-      x: z.number(),
-      y: z.number(),
-    })
-    .optional(),
-});
-
-const edgeSchema = z.object({
-  id: z.string(),
-  source: z.string(),
-  target: z.string(),
-  data: z.object({ label: z.string().optional() }).optional(),
-});
+import { designMessageSchema } from "@/types/tasks";
+import type { CanvasNode, CanvasEdge } from "@/types/canvas";
 
 const payloadSchema = z.object({
   projectId: z.string().min(1),
   roomId: z.string().min(1),
-  chatHistory: z.array(chatMessageSchema),
-  nodes: z.array(nodeSchema),
-  edges: z.array(edgeSchema),
+  chatHistory: z.array(designMessageSchema),
 });
 
 const SYSTEM_PROMPT = `You are Ghost AI, an expert software architect and technical writer.
@@ -67,12 +40,23 @@ export const generateSpecTask = schemaTask({
     randomize: true,
   },
   run: async (payload) => {
-    const { projectId, roomId, chatHistory, nodes, edges } = payload;
+    const { projectId, roomId, chatHistory } = payload;
 
     metadata.set("status", "starting");
-    logger.log("Spec generation started", { projectId, roomId, nodeCount: nodes.length, edgeCount: edges.length });
+    logger.log("Spec generation started", { projectId, roomId });
 
-    const nodeDescriptions = nodes.map((n) => ({
+    const liveblocks = new Liveblocks({ secret: process.env.LIVEBLOCKS_SECRET_KEY! });
+
+    let currentNodes: readonly CanvasNode[] = [];
+    let currentEdges: readonly CanvasEdge[] = [];
+    await mutateFlow<CanvasNode, CanvasEdge>({ client: liveblocks, roomId }, (flow) => {
+      currentNodes = flow.nodes;
+      currentEdges = flow.edges;
+    });
+
+    logger.log("Canvas state read", { nodeCount: currentNodes.length, edgeCount: currentEdges.length });
+
+    const nodeDescriptions = currentNodes.map((n) => ({
       id: n.id,
       label: n.data?.label ?? n.id,
       shape: n.data?.shape ?? "rectangle",
@@ -80,8 +64,7 @@ export const generateSpecTask = schemaTask({
       y: n.position?.y ?? 0,
     }));
 
-    const edgeDescriptions = edges.map((e) => ({
-      from: e.id,
+    const edgeDescriptions = currentEdges.map((e) => ({
       source: e.source,
       target: e.target,
       label: e.data?.label,
@@ -119,20 +102,17 @@ Generate a Markdown technical specification for this system.`;
     metadata.set("status", "saving");
     logger.log("Uploading spec to Vercel Blob");
 
-    const specRecord = await prisma.projectSpec.create({
-      data: { projectId, filePath: "" },
-    });
-
-    const blob = await put(`specs/${projectId}/${specRecord.id}.md`, spec, {
+    // Generate ID before upload so the record is created in a single write
+    const specId = crypto.randomUUID();
+    const blob = await put(`specs/${projectId}/${specId}.md`, spec, {
       access: "private",
       contentType: "text/markdown",
       addRandomSuffix: false,
       allowOverwrite: false,
     });
 
-    await prisma.projectSpec.update({
-      where: { id: specRecord.id },
-      data: { filePath: blob.url },
+    const specRecord = await prisma.projectSpec.create({
+      data: { id: specId, projectId, filePath: blob.url },
     });
 
     metadata.set("status", "completed");
