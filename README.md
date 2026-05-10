@@ -1,6 +1,14 @@
 # Ghost AI
 
-Real-time collaborative system design workspace. Describe a system in plain English, let AI generate the architecture on a shared canvas, refine it with collaborators, and export a technical specification.
+Real-time collaborative system design workspace. Describe a system in plain English, let AI generate the architecture on a shared canvas, refine it with your team, and export a technical specification.
+
+## Features
+
+- **AI architecture generation** — describe a system in plain English; AI creates nodes and edges on the shared canvas in real time
+- **Collaborative canvas** — live cursors, presence avatars, and simultaneous editing via Liveblocks + React Flow
+- **Starter templates** — import a pre-built architecture (microservices, CI/CD pipeline, event-driven) as a starting point
+- **Spec generation** — convert the canvas graph into a persisted Markdown technical specification you can preview and download
+- **Project management** — create projects, invite collaborators, and manage access by owner / collaborator role
 
 ## Stack
 
@@ -23,6 +31,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+In a separate terminal, start the Trigger.dev dev server to run background tasks locally:
+
+```bash
+npx trigger.dev@latest dev
+```
+
+Requires `TRIGGER_SECRET_KEY` in your `.env` file. First-time setup: `npx trigger.dev@latest init`.
+
 ## Project Structure
 
 ```text
@@ -32,4 +48,5 @@ lib/          Shared utilities and infrastructure
 trigger/      Durable background tasks (AI generation, spec export)
 prisma/       Database schema
 context/      Project specs, architecture decisions, and progress tracker
+docs/         User-facing documentation
 ```
